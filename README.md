@@ -1,4 +1,6 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# legalize-kp-web
+
+북한법령정보센터 웹 프론트엔드 (Next.js + Tailwind CSS).
 
 ## Getting Started
 
