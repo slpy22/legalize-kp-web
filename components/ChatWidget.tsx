@@ -97,12 +97,17 @@ export default function ChatWidget() {
             textRef.current += d.text || "";
             setToolStatus("");
             scheduleTextUpdate();
+          } else if (etype === "thinking") {
+            // 에이전트 사고 과정 — 간략한 상태로 표시
+            setToolStatus(`💭 ${(d.text || "분석 중...").slice(0, 60)}...`);
           } else if (etype === "tool_call") {
             const names: Record<string,string> = {
               search_laws: "법령 검색", get_article: "조문 조회",
+              search_articles: "조문 내용 검색",
               compare_laws: "남북법 비교", lookup_term: "용어 조회",
             };
-            setToolStatus(`🔍 ${names[d.name] || d.name} 중...`);
+            const step = d.step ? `(${d.step})` : "";
+            setToolStatus(`🔍 ${names[d.name] || d.name} ${step}`);
           } else if (etype === "tool_result") {
             setToolStatus("");
           } else if (etype === "done") {
