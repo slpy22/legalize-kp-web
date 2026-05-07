@@ -143,7 +143,7 @@ export async function fetchMappings(
   perPage: number = 10,
   q?: string,
 ) {
-  let url = `/api/v1/compare?action=mapping&page=${page}&per_page=${perPage}`;
+  let url = `/api/v1/compare/?action=mapping&page=${page}&per_page=${perPage}`;
   if (category) url += `&category=${encodeURIComponent(category)}`;
   if (q) url += `&q=${encodeURIComponent(q)}`;
   return apiWithMeta<any>(url);
@@ -152,14 +152,14 @@ export async function fetchMappings(
 /** 비교 상세 */
 export async function fetchCompareDetail(kpName: string) {
   return api<any>(
-    `/api/v1/compare?action=detail&kp_name=${encodeURIComponent(kpName)}`,
+    `/api/v1/compare/?action=detail&kp_name=${encodeURIComponent(kpName)}`,
   );
 }
 
 /** 조문 비교 */
 export async function fetchCompareArticles(kpName: string, krName: string) {
   return api<any>(
-    `/api/v1/compare?action=articles&kp_name=${encodeURIComponent(kpName)}&kr_name=${encodeURIComponent(krName)}`,
+    `/api/v1/compare/?action=articles&kp_name=${encodeURIComponent(kpName)}&kr_name=${encodeURIComponent(krName)}`,
   );
 }
 
@@ -170,7 +170,7 @@ export async function fetchCompareTerms(
   page: number = 1,
   perPage: number = 10,
 ) {
-  let url = `/api/v1/compare?action=terms&page=${page}&per_page=${perPage}`;
+  let url = `/api/v1/compare/?action=terms&page=${page}&per_page=${perPage}`;
   if (query) url += `&q=${encodeURIComponent(query)}`;
   if (category) url += `&category=${encodeURIComponent(category)}`;
   return apiWithMeta<any>(url);
@@ -179,6 +179,6 @@ export async function fetchCompareTerms(
 /** 체계 비교 */
 export async function fetchCompareStructure(kpName: string, krName: string) {
   return api<any>(
-    `/api/v1/compare?action=structure&kp_name=${encodeURIComponent(kpName)}&kr_name=${encodeURIComponent(krName)}`,
+    `/api/v1/compare/?action=structure&kp_name=${encodeURIComponent(kpName)}&kr_name=${encodeURIComponent(krName)}`,
   );
 }
