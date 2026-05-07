@@ -110,6 +110,13 @@ export default function ChatWidget() {
             setToolStatus(`🔍 ${names[d.name] || d.name} ${step}`);
           } else if (etype === "tool_result") {
             setToolStatus("");
+          } else if (etype === "validation") {
+            // 인용 검증 결과
+            const inv = d.invalid || [];
+            if (inv.length > 0) {
+              textRef.current += `\n\n> *인용 검증: ${inv.join(", ")} 확인 불가*`;
+              scheduleTextUpdate();
+            }
           } else if (etype === "done") {
             if (d.sources) {
               for (const s of d.sources) {
