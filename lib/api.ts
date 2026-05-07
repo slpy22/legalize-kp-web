@@ -11,7 +11,11 @@ import type {
   CompareData,
 } from "./types";
 
-const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// 서버 컴포넌트에서는 내부 URL, 클라이언트에서는 상대 경로
+const BASE =
+  typeof window === "undefined"
+    ? (process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000")
+    : (process.env.NEXT_PUBLIC_API_URL ?? "");
 
 /* ── 헬퍼 ── */
 async function api<T>(path: string): Promise<T> {

@@ -2,6 +2,8 @@ import Link from "next/link";
 import { fetchCategories } from "@/lib/api";
 import SearchBar from "@/components/SearchBar";
 
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
   const ref = await fetchCategories();
   const categories = [...ref.categories].sort((a, b) => b.count - a.count);

@@ -1,11 +1,8 @@
 import Link from "next/link";
-import { fetchAllLawNames, fetchHistory } from "@/lib/api";
+import { fetchHistory } from "@/lib/api";
 import AmendmentTimeline from "@/components/AmendmentTimeline";
 
-export async function generateStaticParams() {
-  const names = await fetchAllLawNames();
-  return names.map((n) => ({ name: n }));
-}
+export const dynamic = "force-dynamic";
 
 export default async function HistoryPage({
   params,

@@ -1,11 +1,8 @@
 import Link from "next/link";
-import { fetchCategories, fetchLawsByCategory } from "@/lib/api";
+import { fetchLawsByCategory } from "@/lib/api";
 import CategoryLawList from "./CategoryLawList";
 
-export async function generateStaticParams() {
-  const ref = await fetchCategories();
-  return ref.categories.map((c) => ({ name: c.category }));
-}
+export const dynamic = "force-dynamic";
 
 export default async function CategoryPage({
   params,
