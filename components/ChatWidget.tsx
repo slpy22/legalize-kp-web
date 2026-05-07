@@ -32,6 +32,7 @@ export default function ChatWidget() {
   const textRef = useRef("");
   const rafId = useRef(0);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // 스크롤 하단 유지
   useEffect(() => {
@@ -131,6 +132,7 @@ export default function ChatWidget() {
       setToolStatus("");
       textRef.current = "";
       setBusy(false);
+      setTimeout(() => inputRef.current?.focus(), 0);
     }
   }
 
@@ -237,9 +239,9 @@ export default function ChatWidget() {
       <div style={{ flexShrink: 0, borderTop: "1px solid #e5e7eb", background: "#fff", padding: "12px 16px" }}>
         <form onSubmit={(e) => { e.preventDefault(); send(input); }}
           style={{ maxWidth: 720, margin: "0 auto", display: "flex", gap: 8 }}>
-          <input type="text" value={input} onChange={(e) => setInput(e.target.value)}
+          <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)}
             placeholder="북한 법령에 대해 질문해 보세요..."
-            disabled={busy}
+            disabled={busy} autoFocus
             style={{ flex: 1, padding: "10px 16px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none" }} />
           <button type="submit" disabled={busy || !input.trim()}
             style={{ padding: "10px 20px", borderRadius: 8, background: busy ? "#9ca3af" : "#1a365d", color: "#fff", border: "none", fontSize: 14, cursor: busy ? "default" : "pointer" }}>
