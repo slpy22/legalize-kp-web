@@ -6,10 +6,12 @@ import { useParams } from "next/navigation";
 import { fetchCompareDetail } from "@/lib/api";
 
 interface ArticleMapping {
-  kp_article?: string;
+  kp?: string;        // API: "제1조(사명)"
+  kp_article?: string; // 호환
   kr_article?: string;
   kr_law?: string;
-  description?: string;
+  topic?: string;      // API: "목적 조항"
+  description?: string; // 호환
   similarity?: string;
 }
 
@@ -250,10 +252,10 @@ function CompareDetailContent() {
               <tbody>
                 {articleMappings.map((am, i) => (
                   <tr key={i} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="px-4 py-2 font-mono text-navy">{am.kp_article || "-"}</td>
+                    <td className="px-4 py-2 font-mono text-navy">{am.kp || am.kp_article || "-"}</td>
                     <td className="px-4 py-2 text-gray-600">{am.kr_law || "-"}</td>
                     <td className="px-4 py-2 font-mono text-red-700">{am.kr_article || "-"}</td>
-                    <td className="px-4 py-2 text-gray-600">{am.description || "-"}</td>
+                    <td className="px-4 py-2 text-gray-600">{am.topic || am.description || "-"}</td>
                     <td className="px-4 py-2 text-center text-gray-500">{am.similarity || "-"}</td>
                   </tr>
                 ))}

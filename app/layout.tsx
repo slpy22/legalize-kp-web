@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "북한법정보센터",
+  title: "북한법률정보센터",
   description: "북한 법령 검색, 조문 열람, 개정이력 조회, 남북법 비교 서비스",
 };
 

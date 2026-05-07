@@ -19,9 +19,9 @@ export default function Header() {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         {/* 로고 */}
         <Link href="/" className="flex items-center gap-2">
-          <span className="text-lg font-bold tracking-tight">북한법정보센터</span>
+          <span className="text-lg font-bold tracking-tight">북한법률정보센터</span>
           <span className="hidden text-sm opacity-80 sm:inline">
-            북한법령정보센터
+            북한법률정보센터
           </span>
         </Link>
 

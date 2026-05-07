@@ -12,7 +12,7 @@ export default async function Home() {
       <section className="bg-navy-light px-4 py-16 text-white">
         <div className="mx-auto max-w-2xl text-center">
           <h1 className="mb-2 text-3xl font-bold tracking-tight">
-            북한법령정보센터
+            북한법률정보센터
           </h1>
           <p className="mb-8 text-white/80">
             북한 법령 {ref.total_laws}건의 조문 검색, 개정이력, 남북법 비교

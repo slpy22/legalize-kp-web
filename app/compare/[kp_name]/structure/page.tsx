@@ -11,10 +11,13 @@ interface ChapterItem {
 }
 
 interface StructureData {
-  kp_chapters: ChapterItem[];
-  kr_chapters: ChapterItem[];
-  kp_name: string;
-  kr_name: string;
+  kp?: { name?: string; chapters?: ChapterItem[] };
+  kr?: { name?: string; chapters?: ChapterItem[] };
+  // backward compat
+  kp_chapters?: ChapterItem[];
+  kr_chapters?: ChapterItem[];
+  kp_name?: string;
+  kr_name?: string;
 }
 
 function StructureContent() {
@@ -54,8 +57,8 @@ function StructureContent() {
     })();
   }, [kpName, krNameParam]);
 
-  const kpChapters = data?.kp_chapters || [];
-  const krChapters = data?.kr_chapters || [];
+  const kpChapters = data?.kp?.chapters || data?.kp_chapters || [];
+  const krChapters = data?.kr?.chapters || data?.kr_chapters || [];
   const maxLen = Math.max(kpChapters.length, krChapters.length);
 
   return (

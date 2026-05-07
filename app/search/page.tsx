@@ -8,6 +8,7 @@ import { searchLaws } from "@/lib/api";
 import type { SearchResultItem } from "@/lib/types";
 import SearchBar from "@/components/SearchBar";
 import Pagination from "@/components/Pagination";
+import Highlight from "@/components/Highlight";
 
 function SearchResults() {
   const searchParams = useSearchParams();
@@ -85,7 +86,7 @@ function SearchResults() {
                   className="group block rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-all hover:border-navy-light hover:shadow-md"
                 >
                   <h3 className="font-semibold text-navy-light group-hover:underline">
-                    {r.law_name}
+                    <Highlight text={r.law_name} query={q} />
                   </h3>
                   <div className="mt-1 flex flex-wrap gap-x-4 text-xs text-gray-500">
                     <span>{r.category}</span>
@@ -105,8 +106,14 @@ function SearchResults() {
                           <span className="font-medium">
                             제{ma.article_number}조
                           </span>{" "}
-                          {ma.content.slice(0, 150)}
-                          {ma.content.length > 150 ? "..." : ""}
+                          <Highlight
+                            text={
+                              ma.content.length > 150
+                                ? ma.content.slice(0, 150) + "..."
+                                : ma.content
+                            }
+                            query={q}
+                          />
                         </p>
                       ))}
                     </div>
