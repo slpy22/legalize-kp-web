@@ -249,7 +249,7 @@ export default function ChatWidget() {
 
       {/* 입력 영역 */}
       <div style={{ flexShrink: 0, borderTop: "1px solid #e5e7eb", background: "#fff", padding: "12px 16px" }}>
-        <form onSubmit={(e) => { e.preventDefault(); if (!e.nativeEvent.isComposing) send(input); }}
+        <form onSubmit={(e) => { e.preventDefault(); send(input); }}
           style={{ maxWidth: 720, margin: "0 auto", display: "flex", gap: 8, alignItems: "flex-end" }}>
           <textarea
             ref={inputRef}
@@ -263,7 +263,7 @@ export default function ChatWidget() {
             }}
             onKeyDown={(e) => {
               // Enter로 전송, Shift+Enter로 줄바꿈
-              if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+              if (e.key === "Enter" && !e.shiftKey && !(e.nativeEvent as any).isComposing) {
                 e.preventDefault();
                 send(input);
               }
