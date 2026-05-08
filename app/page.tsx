@@ -8,8 +8,23 @@ export default async function Home() {
   const ref = await fetchCategories();
   const categories = [...ref.categories].sort((a, b) => b.count - a.count);
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "북한법률정보센터",
+    url: "https://www.nk-law.kr",
+    description: `310개 북한 법령의 조문 검색, 개정이력 조회, 남북법 비교, AI 법률 상담 서비스.`,
+    potentialAction: {
+      "@type": "SearchAction",
+      target: "https://www.nk-law.kr/search?q={search_term_string}&mode=hybrid",
+      "query-input": "required name=search_term_string",
+    },
+    inLanguage: "ko",
+  };
+
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* 히어로 / 검색 영역 */}
       <section className="bg-navy-light px-4 py-10 text-white sm:py-16">
         <div className="mx-auto max-w-2xl text-center">

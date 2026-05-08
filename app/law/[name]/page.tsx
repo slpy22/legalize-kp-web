@@ -1,8 +1,29 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { fetchLaw } from "@/lib/api";
 import ArticleView from "@/components/ArticleView";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: Promise<{ name: string }> }): Promise<Metadata> {
+  const { name: rawName } = await params;
+  const name = decodeURIComponent(rawName);
+  try {
+    const data = await fetchLaw(name);
+    const law = data.law;
+    return {
+      title: `${name} - 북한 법령`,
+      description: `북한 ${name} 전문. ${law.total_articles || ""}개 조문, 카테고리: ${law.category || ""}. 조문 열람, 개정이력, 남북법 비교.`,
+      openGraph: {
+        title: `${name} | 북한법률정보센터`,
+        description: `북한 ${name} 전문 열람. ${law.total_articles || ""}개 조문.`,
+        url: `https://www.nk-law.kr/law/${encodeURIComponent(name)}`,
+      },
+    };
+  } catch {
+    return { title: `${name} - 북한 법령` };
+  }
+}
 
 export default async function LawPage({
   params,
@@ -23,7 +44,23 @@ export default async function LawPage({
     }
   }
 
+  // JSON-LD 구조화 데이터
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Legislation",
+    name: name,
+    legislationType: "Law",
+    jurisdiction: { "@type": "AdministrativeArea", name: "조선민주주의인민공화국" },
+    datePublished: law.enactment_date || undefined,
+    dateModified: law.latest_version_date || undefined,
+    description: `북한 ${name}. ${law.category || ""} 분야. ${law.total_articles || ""}개 조문.`,
+    url: `https://www.nk-law.kr/law/${encodeURIComponent(name)}`,
+    inLanguage: "ko",
+  };
+
   return (
+    <>
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
     <section className="mx-auto max-w-6xl px-4 py-8">
       {/* 브레드크럼 */}
       <nav className="mb-6 text-sm text-gray-500">
@@ -123,5 +160,6 @@ export default async function LawPage({
         )}
       </div>
     </section>
+    </>
   );
 }

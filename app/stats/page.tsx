@@ -1,7 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { fetchCategories } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "법령 통계",
+  description: "북한 310개 법령의 카테고리별 통계. 분야별 법령 수, 분포 현황.",
+};
 
 export default async function StatsPage() {
   const ref = await fetchCategories();

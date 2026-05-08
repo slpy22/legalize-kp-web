@@ -28,7 +28,8 @@ export default function ChatWidget() {
   const [sid, setSid] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [toolStatus, setToolStatus] = useState("");
-  const [examples, setExamples] = useState<string[]>(FALLBACK_EXAMPLES);
+  const [examples, setExamples] = useState<string[]>([]);
+  const [examplesLoaded, setExamplesLoaded] = useState(false);
 
   const textRef = useRef("");
   const rafId = useRef(0);
@@ -39,8 +40,9 @@ export default function ChatWidget() {
   useEffect(() => {
     fetch(`${API_BASE}/api/v1/chat/suggestions`)
       .then(r => r.json())
-      .then(d => { if (d.questions?.length) setExamples(d.questions); })
-      .catch(() => {});
+      .then(d => { setExamples(d.questions?.length ? d.questions : FALLBACK_EXAMPLES); })
+      .catch(() => { setExamples(FALLBACK_EXAMPLES); })
+      .finally(() => { setExamplesLoaded(true); });
   }, []);
 
   // 스크롤 하단 유지
@@ -187,13 +189,13 @@ export default function ChatWidget() {
               <div style={{ fontSize: 48, marginBottom: 8 }}>⚖️</div>
               <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>북한법 AI 상담</h2>
               <p style={{ fontSize: 14, color: "#9ca3af", marginBottom: 32 }}>북한 법령에 대해 궁금한 것을 질문해 보세요.</p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 400, margin: "0 auto" }}>
-                {examples.map((q) => (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 400, margin: "0 auto", minHeight: 140 }}>
+                {examplesLoaded ? examples.map((q) => (
                   <button key={q} onClick={() => send(q)}
                     style={{ textAlign: "left", padding: "12px 16px", border: "1px solid #e5e7eb", borderRadius: 8, background: "#fff", fontSize: 14, cursor: "pointer" }}>
                     {q}
                   </button>
-                ))}
+                )) : null}
               </div>
             </div>
           ) : (

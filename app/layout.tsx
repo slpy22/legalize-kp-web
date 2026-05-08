@@ -16,8 +16,32 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "북한법률정보센터",
-  description: "북한 법령 검색, 조문 열람, 개정이력 조회, 남북법 비교 서비스",
+  title: {
+    default: "북한법률정보센터 | 북한 법령 검색 및 남북법 비교",
+    template: "%s | 북한법률정보센터",
+  },
+  description: "310개 북한 법령의 조문 검색, 개정이력 조회, 남북법 비교, AI 법률 상담 서비스. 북한 사회주의헌법, 형법, 민법 등 전문 열람.",
+  keywords: ["북한법", "북한 법령", "남북법 비교", "북한 헌법", "북한 형법", "통일법제", "북한법률정보"],
+  authors: [{ name: "북한법률정보센터" }],
+  openGraph: {
+    type: "website",
+    locale: "ko_KR",
+    url: "https://www.nk-law.kr",
+    siteName: "북한법률정보센터",
+    title: "북한법률정보센터 | 북한 법령 검색 및 남북법 비교",
+    description: "310개 북한 법령의 조문 검색, 개정이력 조회, 남북법 비교, AI 법률 상담 서비스.",
+  },
+  twitter: {
+    card: "summary",
+    title: "북한법률정보센터",
+    description: "310개 북한 법령의 조문 검색, 남북법 비교, AI 법률 상담",
+  },
+  alternates: {
+    canonical: "https://www.nk-law.kr",
+  },
+  verification: {
+    google: "", // Search Console 인증 후 채울 것
+  },
 };
 
 export default function RootLayout({
