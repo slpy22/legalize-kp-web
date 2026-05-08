@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Link from "next/link";
 import { fetchLaw } from "@/lib/api";
 import ArticleView from "@/components/ArticleView";
@@ -135,7 +136,9 @@ export default async function LawPage({
       <div className="flex gap-8">
         {/* 본문 */}
         <div className="min-w-0 flex-1">
-          <ArticleView articles={articles} />
+          <Suspense fallback={<div className="py-8 text-center text-gray-400">조문 로딩 중...</div>}>
+            <ArticleView articles={articles} />
+          </Suspense>
         </div>
 
         {/* 목차 사이드바 */}

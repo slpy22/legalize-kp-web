@@ -219,12 +219,20 @@ export default function ChatWidget() {
                   {/* 출처 */}
                   {m.sources.length > 0 && (
                     <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 6 }}>
-                      {m.sources.map((s, j) => s.law_name && (
-                        <Link key={j} href={`/law/${encodeURIComponent(s.law_name)}`}
-                          style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #bfdbfe", background: "#eff6ff", fontSize: 12, color: "#1d4ed8", textDecoration: "none" }}>
-                          📖 {s.law_name}{s.article ? ` 제${s.article}조` : ""}
-                        </Link>
-                      ))}
+                      {m.sources.map((s, j) => {
+                        if (!s.law_name) return null;
+                        const name = s.law_name.trim();
+                        const art = s.article ? s.article.trim() : "";
+                        const query = art ? `?highlight=${art}` : "";
+                        const hash = art ? `#article-${art}` : "";
+                        const url = `/law/${encodeURIComponent(name)}${query}${hash}`;
+                        return (
+                          <a key={j} href={url} target="_blank" rel="noopener noreferrer"
+                            style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #bfdbfe", background: "#eff6ff", fontSize: 12, color: "#1d4ed8", textDecoration: "none" }}>
+                            📖 {name}{art ? ` 제${art}조` : ""}
+                          </a>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
