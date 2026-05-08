@@ -18,11 +18,11 @@ interface Props {
 export default function SearchBar({
   size = "normal",
   initialQuery = "",
-  initialMode = "keyword",
+  initialMode = "hybrid",
 }: Props) {
   const router = useRouter();
   const [query, setQuery] = useState(initialQuery);
-  const [mode, setMode] = useState(initialMode);
+  const [mode, setMode] = useState(initialMode || "hybrid");
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -43,13 +43,13 @@ export default function SearchBar({
           onChange={(e) => setQuery(e.target.value)}
           placeholder="법령명 또는 키워드를 입력하세요"
           className={`flex-1 rounded-lg border border-gray-300 bg-white text-gray-900 focus:border-navy-light focus:outline-none focus:ring-2 focus:ring-navy-light/30 ${
-            isLarge ? "px-5 py-3.5 text-lg" : "px-4 py-2.5 text-base"
+            isLarge ? "px-4 py-3 text-base sm:px-5 sm:py-3.5 sm:text-lg" : "px-4 py-2.5 text-base"
           }`}
         />
         <button
           type="submit"
           className={`shrink-0 rounded-lg bg-accent font-semibold text-white transition-colors hover:bg-red-600 ${
-            isLarge ? "px-8 py-3.5 text-lg" : "px-6 py-2.5 text-base"
+            isLarge ? "px-6 py-3 text-base sm:px-8 sm:py-3.5 sm:text-lg" : "px-6 py-2.5 text-base"
           }`}
         >
           검색

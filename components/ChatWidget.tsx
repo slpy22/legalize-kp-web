@@ -52,6 +52,8 @@ export default function ChatWidget() {
     if (!text.trim() || busy) return;
     setBusy(true);
     setInput("");
+    // textarea 높이 초기화
+    if (inputRef.current) (inputRef.current as HTMLTextAreaElement).style.height = "auto";
     textRef.current = "";
     setDisplayText("");
     setToolStatus("💭 생각 중...");
@@ -148,10 +150,8 @@ export default function ChatWidget() {
     }
   }
 
-  const headerH = 56;
-
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: `calc(100vh - ${headerH}px)`, maxHeight: `calc(100vh - ${headerH}px)` }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
       {/* 상단 바 */}
       <div style={{ flexShrink: 0, display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #e5e7eb", background: "#fff", padding: "8px 16px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -249,17 +249,45 @@ export default function ChatWidget() {
 
       {/* 입력 영역 */}
       <div style={{ flexShrink: 0, borderTop: "1px solid #e5e7eb", background: "#fff", padding: "12px 16px" }}>
-        <form onSubmit={(e) => { e.preventDefault(); send(input); }}
-          style={{ maxWidth: 720, margin: "0 auto", display: "flex", gap: 8 }}>
-          <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)}
-            placeholder="북한 법령에 대해 질문해 보세요..."
-            disabled={busy} autoFocus
-            style={{ flex: 1, padding: "10px 16px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none" }} />
+        <form onSubmit={(e) => { e.preventDefault(); if (!e.nativeEvent.isComposing) send(input); }}
+          style={{ maxWidth: 720, margin: "0 auto", display: "flex", gap: 8, alignItems: "flex-end" }}>
+          <textarea
+            ref={inputRef as React.RefObject<HTMLTextAreaElement>}
+            value={input}
+            onChange={(e) => {
+              setInput(e.target.value);
+              // 자동 높이 조절: 내용에 맞춰 위로 확장
+              const el = e.target;
+              el.style.height = "auto";
+              el.style.height = Math.min(el.scrollHeight, 200) + "px";
+            }}
+            onKeyDown={(e) => {
+              // Enter로 전송, Shift+Enter로 줄바꿈
+              if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                e.preventDefault();
+                send(input);
+              }
+            }}
+            placeholder="북한 법령에 대해 질문해 보세요... (Shift+Enter: 줄바꿈)"
+            disabled={busy}
+            autoFocus
+            rows={1}
+            style={{
+              flex: 1, padding: "10px 16px", border: "1px solid #d1d5db", borderRadius: 8,
+              fontSize: 14, outline: "none", resize: "none", overflow: "hidden",
+              lineHeight: 1.5, minHeight: 42, maxHeight: 200,
+            }}
+          />
           <button type="submit" disabled={busy || !input.trim()}
-            style={{ padding: "10px 20px", borderRadius: 8, background: busy ? "#9ca3af" : "#1a365d", color: "#fff", border: "none", fontSize: 14, cursor: busy ? "default" : "pointer" }}>
+            style={{ padding: "10px 20px", borderRadius: 8, background: busy ? "#9ca3af" : "#1a365d", color: "#fff", border: "none", fontSize: 14, cursor: busy ? "default" : "pointer", flexShrink: 0, height: 42 }}>
             {busy ? "..." : "전송"}
           </button>
         </form>
+      </div>
+
+      {/* 푸터 */}
+      <div style={{ flexShrink: 0, background: "#1a365d", color: "rgba(255,255,255,0.5)", padding: "8px 16px", textAlign: "center", fontSize: 11 }}>
+        데이터 출처: 국가정보원 북한법률정보센터 &middot; 통일법제 데이터베이스 &copy; {new Date().getFullYear()} 북한법률정보센터
       </div>
 
       <style>{`

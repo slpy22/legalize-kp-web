@@ -11,9 +11,9 @@ export default async function Home() {
   return (
     <>
       {/* 히어로 / 검색 영역 */}
-      <section className="bg-navy-light px-4 py-16 text-white">
+      <section className="bg-navy-light px-4 py-10 text-white sm:py-16">
         <div className="mx-auto max-w-2xl text-center">
-          <h1 className="mb-2 text-3xl font-bold tracking-tight">
+          <h1 className="mb-2 text-2xl font-bold tracking-tight sm:text-3xl">
             북한법률정보센터
           </h1>
           <p className="mb-8 text-white/80">

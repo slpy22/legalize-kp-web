@@ -14,7 +14,7 @@ function SearchResults() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const q = searchParams.get("q") || "";
-  const mode = searchParams.get("mode") || "keyword";
+  const mode = searchParams.get("mode") || "hybrid";
   const page = parseInt(searchParams.get("page") || "1", 10);
 
   const [results, setResults] = useState<SearchResultItem[]>([]);

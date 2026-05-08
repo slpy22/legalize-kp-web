@@ -116,7 +116,7 @@ function MappingList() {
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder="북한법명 또는 남한법명 검색..."
-            className="w-64 rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 focus:border-navy-light focus:outline-none focus:ring-2 focus:ring-navy-light/30"
+            className="w-full sm:w-64 rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 focus:border-navy-light focus:outline-none focus:ring-2 focus:ring-navy-light/30"
           />
           <button
             type="submit"
@@ -164,11 +164,11 @@ function MappingList() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200 bg-navy-light text-white">
-                  <th className="px-4 py-3 text-left font-semibold">북한법명</th>
-                  <th className="px-4 py-3 text-left font-semibold">카테고리</th>
-                  <th className="px-4 py-3 text-left font-semibold">대응 남한법</th>
-                  <th className="px-4 py-3 text-center font-semibold">관계</th>
-                  <th className="px-4 py-3 text-right font-semibold">확신도</th>
+                  <th className="px-3 py-3 text-left font-semibold sm:px-4">북한법명</th>
+                  <th className="hidden px-4 py-3 text-left font-semibold sm:table-cell">카테고리</th>
+                  <th className="px-3 py-3 text-left font-semibold sm:px-4">대응 남한법</th>
+                  <th className="hidden px-4 py-3 text-center font-semibold sm:table-cell">관계</th>
+                  <th className="hidden px-4 py-3 text-right font-semibold sm:table-cell">확신도</th>
                 </tr>
               </thead>
               <tbody>
@@ -179,7 +179,7 @@ function MappingList() {
                       key={row.kp_name + i}
                       className="border-b border-gray-100 transition-colors hover:bg-gray-50"
                     >
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-3 sm:px-4">
                         <Link
                           href={`/compare/${encodeURIComponent(row.kp_name)}`}
                           className="font-medium text-navy hover:underline"
@@ -187,8 +187,8 @@ function MappingList() {
                           {row.kp_name}
                         </Link>
                       </td>
-                      <td className="px-4 py-3 text-gray-600">{row.kp_category}</td>
-                      <td className="px-4 py-3">
+                      <td className="hidden px-4 py-3 text-gray-600 sm:table-cell">{row.kp_category}</td>
+                      <td className="px-3 py-3 sm:px-4">
                         {krNames.length > 0 ? (
                           <div className="flex flex-wrap gap-1">
                             {krNames.map((name, j) => (
@@ -204,10 +204,10 @@ function MappingList() {
                           <span className="text-gray-400">미매핑</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-center">
+                      <td className="hidden px-4 py-3 text-center sm:table-cell">
                         <RelBadge rel={row.relationship} />
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="hidden px-4 py-3 text-right sm:table-cell">
                         {row.confidence ? (
                           <span className="text-xs text-gray-600">{row.confidence}</span>
                         ) : (
