@@ -6,7 +6,7 @@ import ReactMarkdown from "react-markdown";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
 
-const EXAMPLES = [
+const FALLBACK_EXAMPLES = [
   "북한 과학기술법이 뭐야?",
   "소프트웨어 저작권 관련 법은?",
   "북한 형벌 체계는?",
@@ -28,11 +28,20 @@ export default function ChatWidget() {
   const [sid, setSid] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [toolStatus, setToolStatus] = useState("");
+  const [examples, setExamples] = useState<string[]>(FALLBACK_EXAMPLES);
 
   const textRef = useRef("");
   const rafId = useRef(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // 추천 질문 동적 로딩
+  useEffect(() => {
+    fetch(`${API_BASE}/api/v1/chat/suggestions`)
+      .then(r => r.json())
+      .then(d => { if (d.questions?.length) setExamples(d.questions); })
+      .catch(() => {});
+  }, []);
 
   // 스크롤 하단 유지
   useEffect(() => {
@@ -179,7 +188,7 @@ export default function ChatWidget() {
               <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>북한법 AI 상담</h2>
               <p style={{ fontSize: 14, color: "#9ca3af", marginBottom: 32 }}>북한 법령에 대해 궁금한 것을 질문해 보세요.</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 400, margin: "0 auto" }}>
-                {EXAMPLES.map((q) => (
+                {examples.map((q) => (
                   <button key={q} onClick={() => send(q)}
                     style={{ textAlign: "left", padding: "12px 16px", border: "1px solid #e5e7eb", borderRadius: 8, background: "#fff", fontSize: 14, cursor: "pointer" }}>
                     {q}
