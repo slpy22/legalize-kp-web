@@ -32,7 +32,7 @@ export default function ChatWidget() {
   const textRef = useRef("");
   const rafId = useRef(0);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // 스크롤 하단 유지
   useEffect(() => {
@@ -53,7 +53,7 @@ export default function ChatWidget() {
     setBusy(true);
     setInput("");
     // textarea 높이 초기화
-    if (inputRef.current) (inputRef.current as HTMLTextAreaElement).style.height = "auto";
+    if (inputRef.current) inputRef.current.style.height = "auto";
     textRef.current = "";
     setDisplayText("");
     setToolStatus("💭 생각 중...");
@@ -252,7 +252,7 @@ export default function ChatWidget() {
         <form onSubmit={(e) => { e.preventDefault(); if (!e.nativeEvent.isComposing) send(input); }}
           style={{ maxWidth: 720, margin: "0 auto", display: "flex", gap: 8, alignItems: "flex-end" }}>
           <textarea
-            ref={inputRef as React.RefObject<HTMLTextAreaElement>}
+            ref={inputRef}
             value={input}
             onChange={(e) => {
               setInput(e.target.value);
