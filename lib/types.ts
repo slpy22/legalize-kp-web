@@ -127,6 +127,50 @@ export interface DiffData {
   total: number;
 }
 
+/* ── law_versions ── */
+export interface LawVersionMeta {
+  id: number;
+  law_id: number;
+  version_date: string;
+  action: string | null;
+  source: string | null;
+}
+
+export interface LawVersionsData {
+  law_name: string;
+  versions: LawVersionMeta[];
+  total: number;
+}
+
+/** 특정 버전 본문 조회 응답 (action=get&version=...) */
+export interface LawVersionDetail {
+  law: LawDetail["law"];
+  version: {
+    version_date: string;
+    action: string | null;
+    source: string | null;
+    frontmatter: Record<string, unknown>;
+    full_text: string;
+  };
+  articles: Article[];
+  total_articles: number;
+}
+
+/** 두 버전 본문 비교 응답 (action=diff_text) */
+export interface DiffTextSide {
+  version_date: string;
+  action: string | null;
+  source: string | null;
+  articles: Article[];
+  full_text: string;
+}
+
+export interface DiffTextData {
+  law_name: string;
+  from: DiffTextSide;
+  to: DiffTextSide;
+}
+
 /* ── 법령 개요 ── */
 export interface OverviewData {
   name: string;

@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
-import { fetchLaw } from "@/lib/api";
+import { fetchLaw, fetchLawVersions } from "@/lib/api";
 import ArticleView from "@/components/ArticleView";
+import VersionSelector from "@/components/VersionSelector";
+import type { LawVersionDetail } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -28,14 +30,24 @@ export async function generateMetadata({ params }: { params: Promise<{ name: str
 
 export default async function LawPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ name: string }>;
+  searchParams: Promise<{ version?: string }>;
 }) {
   const { name: rawName } = await params;
+  const { version } = await searchParams;
   const name = decodeURIComponent(rawName);
-  const data = await fetchLaw(name);
+
+  // 본문 + 버전 메타 목록을 병렬로 가져옴
+  const [data, versionsResp] = await Promise.all([
+    fetchLaw(name, version),
+    fetchLawVersions(name).catch(() => ({ law_name: name, versions: [], total: 0 })),
+  ]);
   const law = data.law;
   const articles = data.articles;
+  const versionInfo = (data as LawVersionDetail).version; // version param 줬을 때만 존재
+  const versions = versionsResp.versions || [];
 
   /* 장 목록 추출 (순서 유지, 중복 제거) */
   const chapters: string[] = [];
@@ -81,7 +93,22 @@ export default async function LawPage({
 
       {/* 메타데이터 카드 */}
       <div className="mb-8 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-        <h1 className="mb-4 text-2xl font-bold text-navy">{law.name}</h1>
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+          <h1 className="text-2xl font-bold text-navy">
+            {law.name}
+            {versionInfo && (
+              <span className="ml-2 rounded-md bg-amber-100 px-2 py-0.5 align-middle text-sm font-medium text-amber-800">
+                {versionInfo.version_date} 버전
+              </span>
+            )}
+          </h1>
+          <VersionSelector
+            lawName={law.name}
+            versions={versions}
+            current={versionInfo?.version_date ?? null}
+            currentDate={law.latest_version_date}
+          />
+        </div>
         <dl className="grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2 lg:grid-cols-3">
           <div>
             <dt className="text-gray-500">카테고리</dt>
@@ -92,12 +119,20 @@ export default async function LawPage({
             <dd className="font-medium">{law.enactment_date ?? "-"}</dd>
           </div>
           <div>
-            <dt className="text-gray-500">최신버전</dt>
-            <dd className="font-medium">{law.latest_version_date ?? "-"}</dd>
+            <dt className="text-gray-500">
+              {versionInfo ? "보는중 버전" : "최신버전"}
+            </dt>
+            <dd className="font-medium">
+              {versionInfo
+                ? versionInfo.version_date
+                : (law.latest_version_date ?? "-")}
+            </dd>
           </div>
           <div>
             <dt className="text-gray-500">조문수</dt>
-            <dd className="font-medium">{law.total_articles ?? 0}조</dd>
+            <dd className="font-medium">
+              {versionInfo ? articles.length : (law.total_articles ?? 0)}조
+            </dd>
           </div>
           <div>
             <dt className="text-gray-500">장수</dt>
@@ -105,9 +140,16 @@ export default async function LawPage({
           </div>
           <div>
             <dt className="text-gray-500">출처</dt>
-            <dd className="font-medium">{law.source}</dd>
+            <dd className="font-medium">
+              {versionInfo ? (versionInfo.source ?? "-") : law.source}
+            </dd>
           </div>
         </dl>
+        {versionInfo && (
+          <p className="mt-3 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-700">
+            * 과거 시점의 본문을 보고 있습니다. 셀렉터에서 “현행본”을 선택하면 최신 본문으로 돌아갑니다.
+          </p>
+        )}
       </div>
 
       {/* 액션 버튼 */}

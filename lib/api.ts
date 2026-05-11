@@ -9,6 +9,9 @@ import type {
   DiffData,
   OverviewData,
   CompareData,
+  LawVersionsData,
+  LawVersionDetail,
+  DiffTextData,
 } from "./types";
 
 // 서버 컴포넌트에서는 내부 URL, 클라이언트에서는 상대 경로
@@ -61,10 +64,32 @@ export async function fetchLawsByCategory(
   );
 }
 
-/** 법령 상세 */
-export async function fetchLaw(name: string): Promise<LawDetail> {
-  return api<LawDetail>(
-    `/api/v1/law?action=get&name=${encodeURIComponent(name)}`,
+/** 법령 상세 (선택적으로 특정 버전 본문) */
+export async function fetchLaw(
+  name: string,
+  version?: string,
+): Promise<LawDetail | LawVersionDetail> {
+  const v = version ? `&version=${encodeURIComponent(version)}` : "";
+  return api<LawDetail | LawVersionDetail>(
+    `/api/v1/law?action=get&name=${encodeURIComponent(name)}${v}`,
+  );
+}
+
+/** 적재된 버전 메타 목록 */
+export async function fetchLawVersions(name: string): Promise<LawVersionsData> {
+  return api<LawVersionsData>(
+    `/api/v1/law?action=versions&name=${encodeURIComponent(name)}`,
+  );
+}
+
+/** 두 버전 본문 비교 (조문 단위 diff 렌더용 raw data) */
+export async function fetchDiffText(
+  name: string,
+  fromDate: string,
+  toDate: string,
+): Promise<DiffTextData> {
+  return api<DiffTextData>(
+    `/api/v1/law?action=diff_text&name=${encodeURIComponent(name)}&date1=${fromDate}&date2=${toDate}`,
   );
 }
 
