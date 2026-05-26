@@ -36,7 +36,7 @@ export default async function HistoryPage({
         {history.law_name} &mdash; 총 {history.amendments.length}건
       </p>
 
-      <AmendmentTimeline amendments={history.amendments} />
+      <AmendmentTimeline amendments={history.amendments} lawName={name} />
     </section>
   );
 }

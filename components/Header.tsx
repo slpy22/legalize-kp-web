@@ -3,26 +3,42 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useChatSidebar } from "@/components/ChatSidebarProvider";
 
 const NAV = [
   { href: "/", label: "홈" },
   { href: "/search", label: "법령검색" },
   { href: "/compare", label: "남북법비교" },
   { href: "/stats", label: "통계" },
-  { href: "/chat", label: "AI 상담" },
 ] as const;
 
 export default function Header() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const { toggle: toggleChat } = useChatSidebar();
 
   return (
     <header className="bg-navy text-white">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         {/* 로고 */}
-        <Link href="/" className="flex items-center gap-2" onClick={() => setMenuOpen(false)}>
-          <span className="text-base font-bold tracking-tight sm:text-lg">북한법률정보센터</span>
-        </Link>
+        <div className="flex items-baseline gap-2">
+          <Link
+            href="/"
+            className="text-base font-bold tracking-tight sm:text-lg"
+            onClick={() => setMenuOpen(false)}
+          >
+            북한법률정보센터
+          </Link>
+          <a
+            href="https://www.nkls.or.kr/index.ink"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden text-xs font-normal text-white/60 transition-colors hover:text-white/90 sm:inline"
+            title="통일과 북한법학회 홈페이지"
+          >
+            통일과 북한법학회
+          </a>
+        </div>
 
         {/* 데스크톱 네비게이션 */}
         <nav className="hidden gap-1 sm:flex">
@@ -35,6 +51,12 @@ export default function Header() {
               </Link>
             );
           })}
+          <button
+            onClick={toggleChat}
+            className="rounded px-3 py-1.5 text-sm transition-colors hover:bg-white/10"
+          >
+            AI 상담
+          </button>
         </nav>
 
         {/* 모바일 햄버거 */}
@@ -61,6 +83,12 @@ export default function Header() {
               </Link>
             );
           })}
+          <button
+            onClick={() => { setMenuOpen(false); toggleChat(); }}
+            className="block w-full rounded px-3 py-2 text-left text-sm transition-colors hover:bg-white/10"
+          >
+            AI 상담
+          </button>
         </nav>
       )}
     </header>

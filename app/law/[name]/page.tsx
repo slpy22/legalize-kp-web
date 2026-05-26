@@ -4,6 +4,7 @@ import Link from "next/link";
 import { fetchLaw, fetchLawVersions } from "@/lib/api";
 import ArticleView from "@/components/ArticleView";
 import VersionSelector from "@/components/VersionSelector";
+import VersionFullText from "@/components/VersionFullText";
 import type { LawVersionDetail } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -179,7 +180,11 @@ export default async function LawPage({
         {/* 본문 */}
         <div className="min-w-0 flex-1">
           <Suspense fallback={<div className="py-8 text-center text-gray-400">조문 로딩 중...</div>}>
-            <ArticleView articles={articles} />
+            {versionInfo && articles.length === 0 ? (
+              <VersionFullText text={versionInfo.full_text} />
+            ) : (
+              <ArticleView articles={articles} />
+            )}
           </Suspense>
         </div>
 

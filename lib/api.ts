@@ -12,6 +12,8 @@ import type {
   LawVersionsData,
   LawVersionDetail,
   DiffTextData,
+  SemanticDiffData,
+  DiffReportData,
 } from "./types";
 
 // 서버 컴포넌트에서는 내부 URL, 클라이언트에서는 상대 경로
@@ -90,6 +92,30 @@ export async function fetchDiffText(
 ): Promise<DiffTextData> {
   return api<DiffTextData>(
     `/api/v1/law?action=diff_text&name=${encodeURIComponent(name)}&date1=${fromDate}&date2=${toDate}`,
+  );
+}
+
+/** 의미 기반 신구비교 — 조문을 임베딩 유사도로 매칭해 신설/삭제/변경/동일 분류 */
+export async function fetchDiffSemantic(
+  name: string,
+  fromDate: string,
+  toDate: string,
+  threshold?: number,
+): Promise<SemanticDiffData> {
+  const t = threshold != null ? `&threshold=${threshold}` : "";
+  return api<SemanticDiffData>(
+    `/api/v1/law?action=diff_semantic&name=${encodeURIComponent(name)}&date1=${fromDate}&date2=${toDate}${t}`,
+  );
+}
+
+/** 의미론적 변화 리포트 — diff_semantic 결과를 LLM이 체계적 마크다운 리포트로 종합 */
+export async function fetchDiffReport(
+  name: string,
+  fromDate: string,
+  toDate: string,
+): Promise<DiffReportData> {
+  return api<DiffReportData>(
+    `/api/v1/law?action=diff_report&name=${encodeURIComponent(name)}&date1=${fromDate}&date2=${toDate}`,
   );
 }
 

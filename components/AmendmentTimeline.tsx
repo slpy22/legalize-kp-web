@@ -1,10 +1,12 @@
+import Link from "next/link";
 import type { Amendment } from "@/lib/types";
 
 interface Props {
   amendments: Amendment[];
+  lawName?: string;
 }
 
-export default function AmendmentTimeline({ amendments }: Props) {
+export default function AmendmentTimeline({ amendments, lawName }: Props) {
   return (
     <div className="relative ml-4">
       {/* 세로 라인 */}
@@ -24,7 +26,7 @@ export default function AmendmentTimeline({ amendments }: Props) {
 
               {/* 카드 */}
               <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   <span className="text-sm font-semibold text-gray-700">
                     {item.date}
                   </span>
@@ -35,9 +37,30 @@ export default function AmendmentTimeline({ amendments }: Props) {
                   >
                     {item.action}
                   </span>
+                  {item.has_text && (
+                    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                      본문 보유{item.source ? ` · ${item.source}` : ""}
+                    </span>
+                  )}
                 </div>
                 {item.basis && (
                   <p className="mt-2 text-sm text-gray-600">{item.basis}</p>
+                )}
+                {item.has_text && lawName && (
+                  <div className="mt-2 flex flex-wrap gap-3 text-xs">
+                    <Link
+                      href={`/law/${encodeURIComponent(lawName)}?version=${item.date}`}
+                      className="text-navy-light hover:underline"
+                    >
+                      이 시점 본문 보기 →
+                    </Link>
+                    <Link
+                      href={`/diff?name=${encodeURIComponent(lawName)}`}
+                      className="text-navy-light hover:underline"
+                    >
+                      신구대조
+                    </Link>
+                  </div>
                 )}
               </div>
             </div>

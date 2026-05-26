@@ -13,7 +13,11 @@ export default async function Home() {
     "@type": "WebSite",
     name: "북한법률정보센터",
     url: "https://www.nk-law.kr",
-    description: `310개 북한 법령의 조문 검색, 개정이력 조회, 남북법 비교, AI 법률 상담 서비스.`,
+    description: `통일과 북한법학회가 운영하는 북한법률정보센터. 310개 북한 법령의 조문 검색, 개정이력 조회, 남북법 비교, AI 법률 상담 서비스.`,
+    publisher: {
+      "@type": "Organization",
+      name: "통일과 북한법학회",
+    },
     potentialAction: {
       "@type": "SearchAction",
       target: "https://www.nk-law.kr/search?q={search_term_string}&mode=hybrid",
@@ -31,6 +35,7 @@ export default async function Home() {
           <h1 className="mb-2 text-2xl font-bold tracking-tight sm:text-3xl">
             북한법률정보센터
           </h1>
+          <p className="mb-1 text-sm text-white/60">통일과 북한법학회 운영</p>
           <p className="mb-8 text-white/80">
             북한 법령 {ref.total_laws}건의 조문 검색, 개정이력, 남북법 비교
           </p>

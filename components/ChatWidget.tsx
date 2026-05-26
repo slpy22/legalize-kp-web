@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
@@ -21,6 +21,7 @@ interface Msg {
 }
 
 export default function ChatWidget() {
+  const router = useRouter();
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [displayText, setDisplayText] = useState("");
   const [input, setInput] = useState("");
@@ -227,10 +228,10 @@ export default function ChatWidget() {
                         const hash = art ? `#article-${art}` : "";
                         const url = `/law/${encodeURIComponent(name)}${query}${hash}`;
                         return (
-                          <a key={j} href={url} target="_blank" rel="noopener noreferrer"
-                            style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #bfdbfe", background: "#eff6ff", fontSize: 12, color: "#1d4ed8", textDecoration: "none" }}>
+                          <button key={j} onClick={() => router.push(url)}
+                            style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #bfdbfe", background: "#eff6ff", fontSize: 12, color: "#1d4ed8", textDecoration: "none", cursor: "pointer" }}>
                             📖 {name}{art ? ` 제${art}조` : ""}
-                          </a>
+                          </button>
                         );
                       })}
                     </div>
@@ -302,11 +303,6 @@ export default function ChatWidget() {
             {busy ? "..." : "전송"}
           </button>
         </form>
-      </div>
-
-      {/* 푸터 */}
-      <div style={{ flexShrink: 0, background: "#1a365d", color: "rgba(255,255,255,0.5)", padding: "8px 16px", textAlign: "center", fontSize: 11 }}>
-        데이터 출처: 국가정보원 북한법률정보센터 &middot; 통일법제 데이터베이스 &copy; {new Date().getFullYear()} 북한법률정보센터
       </div>
 
       <style>{`

@@ -1,14 +1,10 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useChatSidebar } from "@/components/ChatSidebarProvider";
 
 export default function FloatingChatButton() {
-  const pathname = usePathname();
-  const router = useRouter();
-
-  // /chat 페이지에서는 숨김
-  if (pathname === "/chat") return null;
+  const { isOpen, toggle } = useChatSidebar();
 
   const [pos, setPos] = useState({ x: -1, y: -1 });
   const [dragging, setDragging] = useState(false);
@@ -53,11 +49,12 @@ export default function FloatingChatButton() {
   const handlePointerUp = useCallback(() => {
     setDragging(false);
     if (!hasMoved) {
-      router.push("/chat");
+      toggle();
     }
-  }, [hasMoved, router]);
+  }, [hasMoved, toggle]);
 
-  if (pos.x === -1) return null;
+  // 사이드바가 열려 있으면 버튼 숨김 (사이드바 헤더의 X로 닫음)
+  if (pos.x === -1 || isOpen) return null;
 
   return (
     <button
