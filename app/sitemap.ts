@@ -1,5 +1,10 @@
 import type { MetadataRoute } from "next";
 
+// 사이트맵은 기본적으로 빌드타임에 캐시(정적 생성)된다. 그 시점엔 백엔드가
+// 안 떠 있어 법령 목록 fetch가 실패하고 정적 6개만 남는다. 요청타임에 생성하도록
+// 강제해, 런타임에 백엔드(nklaw-backend)에서 전체 법령을 받아 사이트맵에 포함시킨다.
+export const dynamic = "force-dynamic";
+
 const BASE = "https://www.nk-law.kr";
 const API = process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -20,34 +25,40 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       const json = await res.json();
       const categories: { category: string }[] = json.data?.categories || [];
 
-      // 카테고리 페이지
+      // 카테고리 페이지 + 각 카테고리의 개별 법령 페이지
+      // (전체 법령 목록은 빈쿼리 검색이 안 되므로 카테고리별로 받아 합친다)
       for (const cat of categories) {
         entries.push({
           url: `${BASE}/category/${encodeURIComponent(cat.category)}`,
           changeFrequency: "monthly",
           priority: 0.6,
         });
-      }
-
-      // 개별 법령 페이지
-      const namesRes = await fetch(`${API}/api/v1/law?action=search&q=&mode=keyword&page=1&per_page=500`);
-      if (namesRes.ok) {
-        const namesJson = await namesRes.json();
-        const results = namesJson.data?.results || [];
-        for (const r of results) {
-          const name = r.law_name || r.name || "";
-          if (name) {
-            entries.push({
-              url: `${BASE}/law/${encodeURIComponent(name)}`,
-              changeFrequency: "monthly",
-              priority: 0.7,
-            });
-            entries.push({
-              url: `${BASE}/law/${encodeURIComponent(name)}/history`,
-              changeFrequency: "monthly",
-              priority: 0.4,
-            });
+        try {
+          const lawsRes = await fetch(
+            `${API}/api/v1/ref?category=${encodeURIComponent(cat.category)}&per_page=500`,
+          );
+          if (lawsRes.ok) {
+            const lawsJson = await lawsRes.json();
+            const laws: { name?: string; law_name?: string }[] =
+              lawsJson.data?.laws || [];
+            for (const l of laws) {
+              const name = l.name || l.law_name || "";
+              if (name) {
+                entries.push({
+                  url: `${BASE}/law/${encodeURIComponent(name)}`,
+                  changeFrequency: "monthly",
+                  priority: 0.7,
+                });
+                entries.push({
+                  url: `${BASE}/law/${encodeURIComponent(name)}/history`,
+                  changeFrequency: "monthly",
+                  priority: 0.4,
+                });
+              }
+            }
           }
+        } catch {
+          // 개별 카테고리 실패는 건너뛴다
         }
       }
 
