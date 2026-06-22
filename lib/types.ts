@@ -46,6 +46,7 @@ export interface LawDetail {
     amendment_count: number;
     source: string;
     frontmatter: Record<string, unknown>;
+    full_text?: string;
   };
   articles: Article[];
   total_articles: number;

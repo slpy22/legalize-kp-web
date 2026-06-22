@@ -50,6 +50,20 @@ export default async function LawPage({
   const versionInfo = (data as LawVersionDetail).version; // version param 줬을 때만 존재
   const versions = versionsResp.versions || [];
 
+  // 서문 추출 — full_text 의 frontmatter 제거 후 '## 서 문' ~ '## 제N장' 사이.
+  // articles 에는 '제N조'만 들어가서 ArticleView 가 서문을 렌더 못 하므로 별도 표시한다.
+  const fullText = versionInfo?.full_text ?? law.full_text ?? "";
+  const preamble = (() => {
+    if (!fullText) return "";
+    let body = fullText;
+    if (body.startsWith("---")) {
+      const parts = body.split("---");
+      if (parts.length >= 3) body = parts.slice(2).join("---");
+    }
+    const m = body.match(/##\s*서\s*문\s*\n+([\s\S]+?)(?=\n\s*##\s*제)/);
+    return m ? m[1].trim() : "";
+  })();
+
   /* 장 목록 추출 (순서 유지, 중복 제거) */
   const chapters: string[] = [];
   for (const art of articles) {
@@ -179,6 +193,17 @@ export default async function LawPage({
       <div className="flex gap-8">
         {/* 본문 */}
         <div className="min-w-0 flex-1">
+          {preamble && !(versionInfo && articles.length === 0) && (
+            <section
+              id="preamble"
+              className="mb-6 rounded-lg border border-gray-200 bg-white p-5 shadow-sm"
+            >
+              <h2 className="mb-3 text-lg font-bold text-navy">서 문</h2>
+              <div className="whitespace-pre-wrap text-sm leading-relaxed text-gray-800">
+                {preamble}
+              </div>
+            </section>
+          )}
           <Suspense fallback={<div className="py-8 text-center text-gray-400">조문 로딩 중...</div>}>
             {versionInfo && articles.length === 0 ? (
               <VersionFullText text={versionInfo.full_text} />
