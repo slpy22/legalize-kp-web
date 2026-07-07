@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
 
@@ -173,6 +174,7 @@ export default function ChatWidget() {
             <option value="gemini">Gemini</option>
             <option value="openai">OpenAI</option>
             <option value="claude">Claude</option>
+            <option value="self">자체 에이전트</option>
           </select>
         </div>
         <button onClick={() => { setMsgs([]); setSid(null); setDisplayText(""); textRef.current = ""; }}
@@ -212,7 +214,7 @@ export default function ChatWidget() {
                     }}>
                       {m.role === "assistant" ? (
                         <div className="prose prose-sm max-w-none prose-p:my-1 prose-li:my-0.5 prose-strong:text-gray-900">
-                          <ReactMarkdown>{m.text}</ReactMarkdown>
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.text}</ReactMarkdown>
                         </div>
                       ) : m.text}
                     </div>
