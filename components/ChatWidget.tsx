@@ -26,7 +26,7 @@ export default function ChatWidget() {
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [displayText, setDisplayText] = useState("");
   const [input, setInput] = useState("");
-  const [llm, setLlm] = useState("gemini");
+  const [llm, setLlm] = useState("self");
   const [sid, setSid] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [toolStatus, setToolStatus] = useState("");
@@ -171,10 +171,10 @@ export default function ChatWidget() {
           <span style={{ fontSize: 13, color: "#666" }}>모델:</span>
           <select value={llm} onChange={(e) => setLlm(e.target.value)} disabled={busy}
             style={{ border: "1px solid #d1d5db", borderRadius: 4, padding: "3px 8px", fontSize: 13 }}>
+            <option value="self">자체 에이전트</option>
             <option value="gemini">Gemini</option>
             <option value="openai">OpenAI</option>
             <option value="claude">Claude</option>
-            <option value="self">자체 에이전트</option>
           </select>
         </div>
         <button onClick={() => { setMsgs([]); setSid(null); setDisplayText(""); textRef.current = ""; }}
