@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
@@ -19,6 +19,54 @@ interface Msg {
   text: string;
   sources: Source[];
   status: string;
+}
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// 응답 본문의 '법명 제N조 [제M항]' 을 클릭 가능한 마크다운 링크로 변환한다.
+// sources 로 확보한 실제 DB 법령명을 기준으로, '제N조'를 가장 가까운 앞선 법령
+// 문맥에 연결한다. (백엔드 _extract_sources_self 와 동일한 문맥추적 방식)
+// 링크 href 는 커스텀 스킴(#lref/법령명/조/항) 이며, 아래 커스텀 <a> 가 가로챈다.
+function linkifyRefs(text: string, sources: Source[]): string {
+  const names = Array.from(
+    new Set(sources.map((s) => s.law_name?.trim()).filter(Boolean) as string[])
+  );
+  if (names.length === 0) return text;
+
+  // 실제 법령명 + 짧은형(마지막 어절, 예: '조선…민주주의…헌법' → '헌법') 매핑
+  const shortMap: Record<string, string> = {};
+  for (const n of names) {
+    shortMap[n] = n;
+    const short = n.split(/\s+/).pop() || "";
+    if (short && !(short in shortMap)) shortMap[short] = n;
+  }
+  const forms = Object.keys(shortMap).sort((a, b) => b.length - a.length);
+  const nameAlt = forms.map(escapeRegex).join("|");
+  const re = new RegExp(`(${nameAlt})|제\\s*(\\d+)\\s*조(?:\\s*제\\s*(\\d+)\\s*항)?`, "g");
+
+  let current = names.length === 1 ? names[0] : "";
+  let out = "";
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    if (m[1]) {
+      // 법령명 매치 → 문맥만 갱신(원문 그대로 두고 링크는 안 검)
+      current = shortMap[m[1]] || current;
+      continue;
+    }
+    if (!current) continue; // 문맥 법령 없으면 링크 생략
+    const art = m[2];
+    const clause = m[3] || "";
+    const matched = m[0];
+    out += text.slice(last, m.index);
+    const href = `#lref/${encodeURIComponent(current)}/${art}/${clause}`;
+    out += `[${matched}](${href})`;
+    last = m.index + matched.length;
+  }
+  out += text.slice(last);
+  return out;
 }
 
 export default function ChatWidget() {
@@ -163,6 +211,39 @@ export default function ChatWidget() {
     }
   }
 
+  // 인라인 조문 링크 클릭 → 왼쪽 메인 영역에 해당 조문 표시(사이드바는 유지)
+  function openArticle(law: string, art: string) {
+    const q = art ? `?highlight=${encodeURIComponent(art)}` : "";
+    const hash = art ? `#article-${art}` : "";
+    router.push(`/law/${encodeURIComponent(law)}${q}${hash}`);
+  }
+
+  // ReactMarkdown 용 커스텀 <a>: #lref/ 스킴은 조문 뷰어로, 그 외는 새 탭 링크.
+  const mdComponents = {
+    a(props: any) {
+      const { href, children } = props;
+      if (typeof href === "string" && href.startsWith("#lref/")) {
+        const parts = href.slice(6).split("/");
+        const law = decodeURIComponent(parts[0] || "");
+        const art = parts[1] || "";
+        return (
+          <a
+            href="#"
+            onClick={(e) => { e.preventDefault(); openArticle(law, art); }}
+            style={{ color: "#1d4ed8", textDecoration: "underline", textUnderlineOffset: 2, cursor: "pointer", fontWeight: 500 }}
+          >
+            {children}
+          </a>
+        );
+      }
+      return (
+        <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: "#1d4ed8" }}>
+          {children}
+        </a>
+      );
+    },
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
       {/* 상단 바 */}
@@ -214,7 +295,13 @@ export default function ChatWidget() {
                     }}>
                       {m.role === "assistant" ? (
                         <div className="prose prose-sm max-w-none prose-p:my-1 prose-li:my-0.5 prose-strong:text-gray-900">
-                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.text}</ReactMarkdown>
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            components={mdComponents}
+                            urlTransform={(url) => (url.startsWith("#lref/") ? url : defaultUrlTransform(url))}
+                          >
+                            {linkifyRefs(m.text, m.sources)}
+                          </ReactMarkdown>
                         </div>
                       ) : m.text}
                     </div>

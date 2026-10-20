@@ -5,6 +5,7 @@ import { fetchLaw, fetchLawVersions } from "@/lib/api";
 import ArticleView from "@/components/ArticleView";
 import VersionSelector from "@/components/VersionSelector";
 import VersionFullText from "@/components/VersionFullText";
+import ProvenanceBadges from "@/components/ProvenanceBadges";
 import type { LawVersionDetail } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -116,6 +117,11 @@ export default async function LawPage({
                 {versionInfo.version_date} 버전
               </span>
             )}
+            {/* T7: 출처 라벨 + OCR 본문 경고 (판본 지정 시 그 판본 기준) */}
+            <ProvenanceBadges
+              p={versionInfo?.provenance ?? data.meta?.provenance}
+              className="ml-2"
+            />
           </h1>
           <VersionSelector
             lawName={law.name}

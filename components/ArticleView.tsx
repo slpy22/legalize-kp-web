@@ -8,6 +8,27 @@ interface Props {
   articles: Article[];
 }
 
+/**
+ * 조문 키 → 표기 (T4/T7 키 규약)
+ *  '12'    → '제12조'
+ *  '부칙3' → '부칙 제3조'   (부칙 블록의 조문, 본칙과 번호 충돌 방지용 접두)
+ *  '서문1' → '서문 제1조'
+ *  '항5'   → '5.'           (조문 번호가 없는 법령의 'N. 머리글' 항목)
+ * 항목(N.)은 제목을 괄호 없이 이어 쓴다.
+ */
+export function formatArticleHeading(num: string | number, title?: string | null): string {
+  const s = String(num);
+  const t = (title ?? "").trim();
+  let m = /^부칙(\d+)$/.exec(s);
+  if (m) return `부칙 제${m[1]}조${t ? ` (${t})` : ""}`;
+  m = /^서문(\d+)$/.exec(s);
+  if (m) return `서문 제${m[1]}조${t ? ` (${t})` : ""}`;
+  m = /^항(\d+)$/.exec(s);
+  if (m) return `${m[1]}.${t ? ` ${t}` : ""}`;
+  const base = /^\d+$/.test(s) ? `제${s}조` : s;
+  return `${base}${t ? ` (${t})` : ""}`;
+}
+
 export default function ArticleView({ articles }: Props) {
   const searchParams = useSearchParams();
   const highlight = searchParams.get("highlight");
@@ -50,10 +71,7 @@ export default function ArticleView({ articles }: Props) {
             {showChapterHeading && (
               <h2 id={`chapter-${art.chapter}`}>{art.chapter}</h2>
             )}
-            <h5>
-              제{art.article_number}조
-              {art.article_title ? ` (${art.article_title})` : ""}
-            </h5>
+            <h5>{formatArticleHeading(art.article_number, art.article_title)}</h5>
             <p className="whitespace-pre-wrap">{art.content}</p>
           </div>
         );

@@ -95,6 +95,29 @@ function CompareDetailContent() {
     </section>
   );
 
+  // T7 §9-③: 비교 매핑 미작성은 오류가 아닌 정상 상태 — 회색 안내로 보여 준다
+  const unmapped = data as { mapped?: boolean; message?: string } | null;
+  if (unmapped?.mapped === false) return (
+    <section className="mx-auto max-w-6xl px-4 py-8">
+      <nav className="mb-6 text-sm text-gray-500">
+        <Link href="/" className="hover:text-navy-light">홈</Link>
+        <span className="mx-2">/</span>
+        <Link href="/compare" className="hover:text-navy-light">남북법비교</Link>
+        <span className="mx-2">/</span>
+        <span className="font-medium text-gray-800">{kpName}</span>
+      </nav>
+      <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 text-sm text-gray-600">
+        <p className="font-medium text-gray-700">남북 비교 매핑이 아직 작성되지 않은 법령입니다.</p>
+        <p className="mt-1">{unmapped.message}</p>
+        <p className="mt-3">
+          <Link href={`/law/${encodeURIComponent(kpName)}`} className="text-navy-light hover:underline">
+            북한법 원문 보기 →
+          </Link>
+        </p>
+      </div>
+    </section>
+  );
+
   const kp = data?.kp_info;
   const kr = data?.kr_info;
   const krNames = Array.isArray(data?.kr_names) ? data.kr_names : (data?.kr_name ? [data.kr_name] : []);

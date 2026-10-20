@@ -52,7 +52,13 @@ export default function VersionSelector({
           <option key={v.id} value={v.version_date}>
             {v.version_date}
             {v.action ? ` (${v.action})` : ""}
-            {v.source ? ` [${v.source}]` : ""}
+            {/* T7: 출처 라벨(없으면 코드) + OCR 본문 경고 */}
+            {v.provenance?.label
+              ? ` [${v.provenance.label}]`
+              : v.source
+                ? ` [${v.source}]`
+                : ""}
+            {v.provenance?.is_ocr ? " ⚠미검증 OCR" : ""}
           </option>
         ))}
       </select>

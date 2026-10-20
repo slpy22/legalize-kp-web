@@ -9,6 +9,7 @@ import type { SearchResultItem } from "@/lib/types";
 import SearchBar from "@/components/SearchBar";
 import Pagination from "@/components/Pagination";
 import Highlight from "@/components/Highlight";
+import ProvenanceBadges from "@/components/ProvenanceBadges";
 
 function SearchResults() {
   const searchParams = useSearchParams();
@@ -93,7 +94,9 @@ function SearchResults() {
                     <span>
                       유사도: {(r.score * 100).toFixed(1)}%
                     </span>
-                    <span>소스: {r.source}</span>
+                    <span>검색: {r.source}</span>
+                    {/* T7: 데이터 출처 라벨·미검증 OCR (r.source 는 검색 경로라 별도) */}
+                    <ProvenanceBadges p={r.provenance} size="xs" linkSource={false} />
                   </div>
                   {/* 매칭 조문 스니펫 */}
                   {r.matching_articles && r.matching_articles.length > 0 && (
