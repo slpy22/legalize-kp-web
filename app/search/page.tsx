@@ -4,12 +4,60 @@ import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { searchLaws } from "@/lib/api";
-import type { SearchResultItem } from "@/lib/types";
+import { fetchCategories, searchLaws } from "@/lib/api";
+import type { RefData, SearchResultItem } from "@/lib/types";
+import { SEARCH_EXAMPLES } from "@/lib/showcase";
+import { track } from "@/lib/track";
 import SearchBar from "@/components/SearchBar";
 import Pagination from "@/components/Pagination";
 import Highlight from "@/components/Highlight";
 import ProvenanceBadges from "@/components/ProvenanceBadges";
+
+/** 검색어가 없을 때(T42): 빈 화면 대신 예시 검색어와 분야별 목록(홈에서 옮겨 옴) */
+function Browse() {
+  const [ref, setRef] = useState<RefData | null>(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    fetchCategories().then(setRef).catch(() => setFailed(true));
+  }, []);
+  const categories = ref ? [...ref.categories].sort((a, b) => b.count - a.count) : [];
+  return (
+    <div className="space-y-8">
+      <div>
+        <p className="mb-2 text-sm font-semibold text-gray-700">예시 검색어</p>
+        <div className="flex flex-wrap gap-2">
+          {SEARCH_EXAMPLES.map((w) => (
+            <Link
+              key={w}
+              href={`/search?q=${encodeURIComponent(w)}&mode=hybrid`}
+              className="rounded-full border border-gray-200 bg-white px-3.5 py-1.5 text-sm text-gray-700 transition-colors hover:border-navy-light hover:text-navy-light"
+            >
+              {w}
+            </Link>
+          ))}
+        </div>
+      </div>
+      <div>
+        <h2 className="mb-3 text-lg font-bold text-gray-800">
+          분야별 법령{ref ? <span className="ml-2 text-sm font-normal text-gray-500">총 {ref.total_laws}건</span> : null}
+        </h2>
+        {failed && <p className="text-sm text-gray-500">분야 목록을 불러올 수 없습니다.</p>}
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {categories.map((cat) => (
+            <Link
+              key={cat.category}
+              href={`/category/${encodeURIComponent(cat.category)}`}
+              className="group flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm transition-shadow hover:shadow-md"
+            >
+              <span className="font-medium text-navy group-hover:underline">{cat.category}</span>
+              <span className="text-sm text-gray-500">{cat.count}건</span>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function SearchResults() {
   const searchParams = useSearchParams();
@@ -33,6 +81,7 @@ function SearchResults() {
       return;
     }
     setLoading(true);
+    if (page === 1) track("search", { query: q }); // T43 이용 기록(익명) — 쪽 넘김은 세지 않는다
     searchLaws(q, mode, page, 10)
       .then(({ data, meta }) => {
         setResults(data.results);
@@ -59,11 +108,13 @@ function SearchResults() {
 
   return (
     <section className="mx-auto max-w-4xl px-4 py-8">
-      <h1 className="mb-6 text-2xl font-bold text-gray-800">법령 검색</h1>
-
+      <h1 className="mb-1 text-2xl font-bold text-gray-800">법령 찾기</h1>
+      <p className="mb-5 text-sm text-gray-500">법령명·조문 내용으로 찾거나, 아래 분야별 목록에서 둘러보세요.</p>
       <SearchBar initialQuery={q} initialMode={mode} />
+      <p className="mt-2 text-xs text-gray-400">키워드: 글자 그대로 · 시맨틱: 뜻이 가까운 조문 · 하이브리드: 둘을 합친 결과(기본)</p>
 
       <div className="mt-8">
+        {!q && <Browse />}
         {loading && (
           <p className="text-center text-gray-500">검색 중...</p>
         )}

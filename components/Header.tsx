@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useChatSidebar } from "@/components/ChatSidebarProvider";
+import AuthMenu from "@/components/AuthMenu";
 
 type NavItem =
   | { kind: "link"; href: string; label: string }
@@ -15,23 +16,22 @@ type NavItem =
       items: { href: string; label: string }[];
     };
 
+// T42: 강점(신구비교·남북비교·용어비교)을 메뉴 1단계로 편다. 홈·통계는 그대로 둔다(URL 도 모두 그대로).
 const NAV: NavItem[] = [
   { kind: "link", href: "/", label: "홈" },
-  { kind: "link", href: "/search", label: "법령검색" },
-  {
-    kind: "group",
-    label: "남북비교",
-    matchPrefix: "/compare",
-    items: [
-      { href: "/compare", label: "법령 매핑" },
-      { href: "/compare/terms", label: "용어 대조표" },
-    ],
-  },
+  { kind: "link", href: "/search", label: "법령 찾기" },
+  { kind: "link", href: "/diff", label: "신구비교" },
+  { kind: "link", href: "/compare", label: "남북비교" },
+  { kind: "link", href: "/compare/terms", label: "용어비교" },
   { kind: "link", href: "/stats", label: "통계" },
 ];
 
 function isActive(href: string, pathname: string): boolean {
   if (href === "/") return pathname === "/";
+  // 법령 찾기: 검색·분야 목록·법령 본문(개정이력 포함)
+  if (href === "/search") {
+    return ["/search", "/category", "/law"].some((p) => pathname.startsWith(p));
+  }
   // /compare 는 하위 /compare/terms 진입 시 비활성
   if (href === "/compare") {
     return pathname.startsWith("/compare") && !pathname.startsWith("/compare/terms");
@@ -101,7 +101,7 @@ export default function Header() {
         </div>
 
         {/* 데스크톱 네비게이션 */}
-        <nav className="hidden gap-1 sm:flex">
+        <nav className="hidden gap-1 lg:flex">
           {NAV.map((item) => {
             if (item.kind === "link") {
               const active = isActive(item.href, pathname);
@@ -153,16 +153,19 @@ export default function Header() {
               </div>
             );
           })}
+          {/* AI 상담은 페이지가 아니라 사이드바라 테두리 버튼으로 구분한다(T42) */}
           <button
             onClick={toggleChat}
-            className="rounded px-3 py-1.5 text-sm transition-colors hover:bg-white/10"
+            className="ml-1 rounded border border-white/40 px-3 py-1.5 text-sm font-medium transition-colors hover:bg-white/10"
           >
             AI 상담
           </button>
+          {/* T43: 로그인(선택) — 기능이 준비되지 않았으면 보이지 않는다 */}
+          <AuthMenu variant="desktop" />
         </nav>
 
         {/* 모바일 햄버거 */}
-        <button className="p-2 sm:hidden" onClick={() => setMenuOpen(!menuOpen)} aria-label="메뉴">
+        <button className="p-2 lg:hidden" onClick={() => setMenuOpen(!menuOpen)} aria-label="메뉴">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             {menuOpen ? (
               <path d="M6 6l12 12M6 18L18 6" />
@@ -179,7 +182,7 @@ export default function Header() {
 
       {/* 모바일 메뉴 드롭다운 */}
       {menuOpen && (
-        <nav className="border-t border-white/10 px-4 pb-3 sm:hidden">
+        <nav className="border-t border-white/10 px-4 pb-3 lg:hidden">
           {NAV.map((item) => {
             if (item.kind === "link") {
               const active = isActive(item.href, pathname);
@@ -223,6 +226,7 @@ export default function Header() {
           >
             AI 상담
           </button>
+          <AuthMenu variant="mobile" onNavigate={() => setMenuOpen(false)} />
         </nav>
       )}
     </header>

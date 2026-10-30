@@ -7,6 +7,8 @@ import VersionSelector from "@/components/VersionSelector";
 import VersionFullText from "@/components/VersionFullText";
 import ProvenanceBadges from "@/components/ProvenanceBadges";
 import type { LawVersionDetail } from "@/lib/types";
+import { diffHref } from "@/lib/showcase";
+import { TrackOnMount } from "@/components/UsageTracker";
 
 export const dynamic = "force-dynamic";
 
@@ -19,10 +21,13 @@ export async function generateMetadata({ params }: { params: Promise<{ name: str
     return {
       title: `${name} - 북한 법령`,
       description: `북한 ${name} 전문. ${law.total_articles || ""}개 조문, 카테고리: ${law.category || ""}. 조문 열람, 개정이력, 남북법 비교.`,
+      alternates: { canonical: `https://www.nk-law.kr/law/${encodeURIComponent(name)}` },
       openGraph: {
         title: `${name} | 북한법률정보센터`,
         description: `북한 ${name} 전문 열람. ${law.total_articles || ""}개 조문.`,
         url: `https://www.nk-law.kr/law/${encodeURIComponent(name)}`,
+        // openGraph 를 직접 정하면 app/opengraph-image.png(파일 규약)가 빠져서 명시한다(T42)
+        images: ["/opengraph-image.png"],
       },
     };
   } catch {
@@ -50,6 +55,12 @@ export default async function LawPage({
   const articles = data.articles;
   const versionInfo = (data as LawVersionDetail).version; // version param 줬을 때만 존재
   const versions = versionsResp.versions || [];
+  // 최근 두 판본(T42) — 2개 이상이면 '최근 두 판본 비교' 바로가기로 결과까지 한 번에
+  const recentTwo = [...versions]
+    .map((v) => v.version_date)
+    .filter(Boolean)
+    .sort()
+    .slice(-2);
 
   // 서문 추출 — full_text 의 frontmatter 제거 후 '## 서 문' ~ '## 제N장' 사이.
   // articles 에는 '제N조'만 들어가서 ArticleView 가 서문을 렌더 못 하므로 별도 표시한다.
@@ -90,6 +101,8 @@ export default async function LawPage({
   return (
     <>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+    {/* T43: 법령 조회 이용 기록(익명) — '자주 찾는 법령' 집계 */}
+    <TrackOnMount kind="law_view" law={law.name} />
     <section className="mx-auto max-w-6xl px-4 py-8">
       {/* 브레드크럼 */}
       <nav className="mb-6 text-sm text-gray-500">
@@ -181,17 +194,26 @@ export default async function LawPage({
         >
           개정이력
         </Link>
+        {recentTwo.length === 2 && (
+          <Link
+            href={diffHref(law.name, recentTwo[0], recentTwo[1])}
+            className="rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-navy-light"
+          >
+            최근 두 판본 비교 ({recentTwo[0].slice(0, 4)} → {recentTwo[1].slice(0, 4)})
+          </Link>
+        )}
         <Link
           href={`/diff?name=${encodeURIComponent(law.name)}`}
           className="rounded-lg border border-navy-light px-4 py-2 text-sm font-medium text-navy-light transition-colors hover:bg-navy-light hover:text-white"
         >
-          신구대조
+          신구비교
         </Link>
+        {/* T42: 매핑 상세로 바로 간다(매핑이 없는 법령은 상세 페이지가 그 사실을 알려 준다) */}
         <Link
-          href={`/compare?kp=${encodeURIComponent(law.name)}`}
+          href={`/compare/${encodeURIComponent(law.name)}`}
           className="rounded-lg border border-navy-light px-4 py-2 text-sm font-medium text-navy-light transition-colors hover:bg-navy-light hover:text-white"
         >
-          남북법비교
+          남북비교
         </Link>
       </div>
 

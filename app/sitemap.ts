@@ -13,9 +13,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: BASE, lastModified: new Date(), changeFrequency: "weekly", priority: 1.0 },
     { url: `${BASE}/search`, changeFrequency: "weekly", priority: 0.8 },
     { url: `${BASE}/compare`, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${BASE}/compare/terms`, changeFrequency: "monthly", priority: 0.6 },
+    // T42: 강점 페이지(신구비교·용어비교) 우선순위를 올렸다
+    { url: `${BASE}/diff`, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${BASE}/compare/terms`, changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/stats`, changeFrequency: "weekly", priority: 0.5 },
-    { url: `${BASE}/diff`, changeFrequency: "monthly", priority: 0.5 },
+    // T43: 처리방침·약관
+    { url: `${BASE}/privacy`, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${BASE}/terms`, changeFrequency: "yearly", priority: 0.3 },
   ];
 
   // 법령 페이지 (310개)

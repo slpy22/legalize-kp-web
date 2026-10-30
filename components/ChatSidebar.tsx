@@ -75,6 +75,7 @@ export default function ChatSidebar() {
   const { isOpen, close, width, setWidth, isDesktop, setResizing } = useChatSidebar();
   const [mounted, setMounted] = useState(false);
   const resizing = useRef(false);
+  const closeTouch = useRef<{ x: number; y: number } | null>(null);
   useHeaderBottomVar();
   useKeyboardInsetVar();
 
@@ -147,8 +148,9 @@ export default function ChatSidebar() {
       {/* 사이드 패널 — 헤더 아래부터 화면 하단까지. 데스크탑은 드래그로 너비 조절 */}
       <aside
         style={{ top: CHAT_TOP, bottom: "var(--chat-bottom, 0px)", width: isDesktop ? width : undefined }}
-        className={`fixed right-0 z-[9991] flex w-full flex-col bg-white shadow-2xl transition-transform duration-300 ease-in-out sm:w-[420px] ${
-          isOpen ? "translate-x-0" : "translate-x-full"
+        className={`fixed right-0 z-[9991] flex w-full flex-col bg-white transition-transform duration-300 ease-in-out sm:w-[420px] ${
+          // 닫힌 패널의 그림자가 화면 오른쪽 끝에 흰 띠로 비치지 않게 닫히면 그림자를 뺀다(T42)
+          isOpen ? "translate-x-0 shadow-2xl" : "translate-x-full shadow-none"
         }`}
         aria-hidden={!isOpen}
         role="complementary"
@@ -174,8 +176,22 @@ export default function ChatSidebar() {
             </svg>
             <span className="text-sm font-semibold">북한법 AI 상담</span>
           </div>
+          {/* T42: 채팅창을 손가락으로 튕기듯 쓸어 넘긴 직후의 탭에는 브라우저가 click 을 만들지 않는 경우가 있어
+              (스크롤 멈춤으로 쓰임, T38 과 같은 현상) 터치는 손을 뗄 때 닫는다. 버튼 위에서 10px 넘게 움직였으면 닫지 않는다. */}
           <button
             onClick={close}
+            onTouchStart={(e) => {
+              const t = e.touches[0];
+              closeTouch.current = t ? { x: t.clientX, y: t.clientY } : null;
+            }}
+            onTouchEnd={(e) => {
+              const start = closeTouch.current;
+              const t = e.changedTouches[0];
+              closeTouch.current = null;
+              if (!start || !t || Math.hypot(t.clientX - start.x, t.clientY - start.y) > 10) return;
+              if (e.cancelable) e.preventDefault(); // 뒤따르는 click 으로 두 번 닫히지 않게
+              close();
+            }}
             aria-label="닫기"
             className="rounded p-1 transition-colors hover:bg-white/15"
           >

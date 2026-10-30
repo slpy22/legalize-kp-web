@@ -67,7 +67,7 @@ function StructureContent() {
       <nav className="mb-6 text-sm text-gray-500">
         <Link href="/" className="hover:text-navy-light">홈</Link>
         <span className="mx-2">/</span>
-        <Link href="/compare" className="hover:text-navy-light">남북법비교</Link>
+        <Link href="/compare" className="hover:text-navy-light">남북비교</Link>
         <span className="mx-2">/</span>
         <Link href={`/compare/${encodeURIComponent(kpName)}`} className="hover:text-navy-light">{kpName}</Link>
         <span className="mx-2">/</span>

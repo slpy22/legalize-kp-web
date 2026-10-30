@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+import { track } from "@/lib/track";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { fetchCompareDetail } from "@/lib/api";
@@ -73,6 +74,7 @@ function CompareDetailContent() {
       try {
         const result = await fetchCompareDetail(kpName);
         setData(result);
+        track("compare", { law: kpName }); // T43 이용 기록(익명)
       } catch {
         setError("비교 상세 정보를 불러올 수 없습니다.");
       } finally {
@@ -87,7 +89,7 @@ function CompareDetailContent() {
       <nav className="mb-6 text-sm text-gray-500">
         <Link href="/" className="hover:text-navy-light">홈</Link>
         <span className="mx-2">/</span>
-        <Link href="/compare" className="hover:text-navy-light">남북법비교</Link>
+        <Link href="/compare" className="hover:text-navy-light">남북비교</Link>
         <span className="mx-2">/</span>
         <span className="font-medium text-gray-800">{kpName}</span>
       </nav>
@@ -102,7 +104,7 @@ function CompareDetailContent() {
       <nav className="mb-6 text-sm text-gray-500">
         <Link href="/" className="hover:text-navy-light">홈</Link>
         <span className="mx-2">/</span>
-        <Link href="/compare" className="hover:text-navy-light">남북법비교</Link>
+        <Link href="/compare" className="hover:text-navy-light">남북비교</Link>
         <span className="mx-2">/</span>
         <span className="font-medium text-gray-800">{kpName}</span>
       </nav>
@@ -134,7 +136,7 @@ function CompareDetailContent() {
       <nav className="mb-6 text-sm text-gray-500">
         <Link href="/" className="hover:text-navy-light">홈</Link>
         <span className="mx-2">/</span>
-        <Link href="/compare" className="hover:text-navy-light">남북법비교</Link>
+        <Link href="/compare" className="hover:text-navy-light">남북비교</Link>
         <span className="mx-2">/</span>
         <span className="font-medium text-gray-800">{kpName}</span>
       </nav>

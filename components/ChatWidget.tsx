@@ -5,6 +5,8 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { useChatSidebar } from "@/components/ChatSidebarProvider";
+import { track } from "@/lib/track";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
 
@@ -96,6 +98,15 @@ export default function ChatWidget() {
       .finally(() => { setExamplesLoaded(true); });
   }, []);
 
+  // 홈 등의 예시 질문(T42): 사이드바가 질문과 함께 열리면 바로 보낸다
+  const { pendingQuestion, takePendingQuestion } = useChatSidebar();
+  useEffect(() => {
+    if (!pendingQuestion || busy) return;
+    const q = takePendingQuestion();
+    if (q) send(q);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingQuestion, busy]);
+
   // 스크롤 하단 유지
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -112,6 +123,7 @@ export default function ChatWidget() {
 
   async function send(text: string) {
     if (!text.trim() || busy) return;
+    track("chat"); // T43: 사용 여부만 — 질문 내용은 보내지 않는다
     setBusy(true);
     setInput("");
     // textarea 높이 초기화
@@ -255,8 +267,6 @@ export default function ChatWidget() {
             style={{ border: "1px solid #d1d5db", borderRadius: 4, padding: "3px 8px", fontSize: 13 }}>
             <option value="self">자체 에이전트</option>
             <option value="gemini">Gemini</option>
-            <option value="openai">OpenAI</option>
-            <option value="claude">Claude</option>
           </select>
         </div>
         <button onClick={() => { setMsgs([]); setSid(null); setDisplayText(""); textRef.current = ""; }}

@@ -14,6 +14,7 @@ import type {
   DiffTextData,
   SemanticDiffData,
   DiffReportData,
+  LawSummary,
 } from "./types";
 
 // 서버 컴포넌트에서는 내부 URL, 클라이언트에서는 상대 경로
@@ -25,7 +26,11 @@ const BASE =
 /* ── 헬퍼 ── */
 async function api<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`);
-  if (!res.ok) throw new Error(`API ${res.status}: ${path}`);
+  if (!res.ok) {
+    // 실패 응답의 본문은 읽지 않으므로 닫아 둔다(열린 채 남으면 연결이 묶인다, T42)
+    void res.body?.cancel().catch(() => {});
+    throw new Error(`API ${res.status}: ${path}`);
+  }
   const json: ApiResponse<T> = await res.json();
   return json.data;
 }
@@ -35,7 +40,11 @@ async function apiWithMeta<T>(
   path: string,
 ): Promise<{ data: T; meta: PaginationMeta }> {
   const res = await fetch(`${BASE}${path}`);
-  if (!res.ok) throw new Error(`API ${res.status}: ${path}`);
+  if (!res.ok) {
+    // 실패 응답의 본문은 읽지 않으므로 닫아 둔다(열린 채 남으면 연결이 묶인다, T42)
+    void res.body?.cancel().catch(() => {});
+    throw new Error(`API ${res.status}: ${path}`);
+  }
   const json: ApiResponse<T> = await res.json();
   return {
     data: json.data,
@@ -117,6 +126,11 @@ export async function fetchDiffReport(
   return api<DiffReportData>(
     `/api/v1/law?action=diff_report&name=${encodeURIComponent(name)}&date1=${fromDate}&date2=${toDate}`,
   );
+}
+
+/** 전체 법령 목록(메타만, 333건 한 번에) — 홈 '주요 최근 개정'·통계(T42) */
+export async function fetchLawList(): Promise<{ total: number; laws: LawSummary[] }> {
+  return api<{ total: number; laws: LawSummary[] }>(`/api/v1/law?action=list&page=1&per_page=500`);
 }
 
 /** 개정 이력 */

@@ -16,6 +16,10 @@ interface ChatSidebarCtx {
   isDesktop: boolean;
   isResizing: boolean;
   setResizing: (v: boolean) => void;
+  /** 사이드바를 열고 이 질문을 바로 보낸다(T42, 홈의 예시 질문). ChatWidget 이 받아 전송하고 비운다 */
+  ask: (question: string) => void;
+  pendingQuestion: string | null;
+  takePendingQuestion: () => string | null;
 }
 
 const Ctx = createContext<ChatSidebarCtx | null>(null);
@@ -25,8 +29,18 @@ export function ChatSidebarProvider({ children }: { children: React.ReactNode })
   const [width, setWidthState] = useState(DEFAULT_W);
   const [isDesktop, setIsDesktop] = useState(false);
   const [isResizing, setResizing] = useState(false);
+  const [pendingQuestion, setPendingQuestion] = useState<string | null>(null);
 
   const open = useCallback(() => setIsOpen(true), []);
+  const ask = useCallback((question: string) => {
+    setPendingQuestion(question);
+    setIsOpen(true);
+  }, []);
+  const takePendingQuestion = useCallback(() => {
+    const q = pendingQuestion;
+    if (q !== null) setPendingQuestion(null);
+    return q;
+  }, [pendingQuestion]);
   const close = useCallback(() => setIsOpen(false), []);
   const toggle = useCallback(() => setIsOpen((v) => !v), []);
 
@@ -52,7 +66,7 @@ export function ChatSidebarProvider({ children }: { children: React.ReactNode })
   }, []);
 
   return (
-    <Ctx.Provider value={{ isOpen, open, close, toggle, width, setWidth, isDesktop, isResizing, setResizing }}>
+    <Ctx.Provider value={{ isOpen, open, close, toggle, width, setWidth, isDesktop, isResizing, setResizing, ask, pendingQuestion, takePendingQuestion }}>
       {children}
     </Ctx.Provider>
   );
@@ -71,6 +85,9 @@ export function useChatSidebar(): ChatSidebarCtx {
       isDesktop: false,
       isResizing: false,
       setResizing: () => {},
+      ask: () => {},
+      pendingQuestion: null,
+      takePendingQuestion: () => null,
     };
   }
   return ctx;

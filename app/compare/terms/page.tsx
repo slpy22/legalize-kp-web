@@ -2,7 +2,9 @@
 
 import { Suspense, useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { fetchCompareTerms } from "@/lib/api";
+import { track } from "@/lib/track";
 import Pagination from "@/components/Pagination";
 
 interface TermRow {
@@ -13,11 +15,13 @@ interface TermRow {
 }
 
 function TermsContent() {
+  // T42: ?q=<용어> 로 오면 그 용어로 바로 찾는다(홈의 용어 칩)
+  const q = useSearchParams().get("q") || "";
   const [rows, setRows] = useState<TermRow[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [selectedCat, setSelectedCat] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(q);
+  const [debouncedQuery, setDebouncedQuery] = useState(q);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [page, setPage] = useState(1);
@@ -42,6 +46,7 @@ function TermsContent() {
     setLoading(true);
     setError("");
     try {
+      if (debouncedQuery.trim() && page === 1) track("terms", { query: debouncedQuery.trim() }); // T43 이용 기록(익명)
       const { data, meta } = await fetchCompareTerms(
         debouncedQuery || undefined,
         selectedCat || undefined,
@@ -77,12 +82,15 @@ function TermsContent() {
       <nav className="mb-6 text-sm text-gray-500">
         <Link href="/" className="hover:text-navy-light">홈</Link>
         <span className="mx-2">/</span>
-        <Link href="/compare" className="hover:text-navy-light">남북법비교</Link>
+        <Link href="/compare" className="hover:text-navy-light">남북비교</Link>
         <span className="mx-2">/</span>
-        <span className="font-medium text-gray-800">용어 대조표</span>
+        <span className="font-medium text-gray-800">용어비교</span>
       </nav>
 
-      <h1 className="mb-6 text-2xl font-bold text-gray-800">남북 법률용어 대조표</h1>
+      <h1 className="mb-1 text-2xl font-bold text-gray-800">남북 법용어 비교</h1>
+      <p className="mb-6 text-sm text-gray-500">
+        같은 제도를 남북이 다른 말로 부르는 경우가 많습니다. 북한 법률 용어와 대응하는 남한 용어를 찾아보세요(북한어·남한어 어느 쪽으로도 검색).
+      </p>
 
       {/* 검색 + 필터 */}
       <div className="mb-6 flex flex-wrap gap-3">

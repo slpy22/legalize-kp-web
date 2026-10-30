@@ -2,7 +2,9 @@
 
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { fetchMappings } from "@/lib/api";
+import { COMPARE_QUICK_PICKS } from "@/lib/showcase";
 import Pagination from "@/components/Pagination";
 
 interface MappingRow {
@@ -30,6 +32,13 @@ function RelBadge({ rel }: { rel: string | null }) {
 }
 
 function MappingList() {
+  // T42: ?kp=<북한법명>(예전 법령 본문 버튼·외부 링크)은 예전에 무시돼 전체 목록이 떴다. 한 법령을 가리키므로
+  // 그 법령의 비교 상세로 보낸다(이름 검색은 남한법명까지 맞아 해당 법령이 뒤로 밀린다).
+  const kp = useSearchParams().get("kp") || "";
+  const router = useRouter();
+  useEffect(() => {
+    if (kp) router.replace(`/compare/${encodeURIComponent(kp)}`);
+  }, [kp, router]);
   const [rows, setRows] = useState<MappingRow[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [selectedCat, setSelectedCat] = useState("");
@@ -93,18 +102,38 @@ function MappingList() {
       <nav className="mb-6 text-sm text-gray-500">
         <Link href="/" className="hover:text-navy-light">홈</Link>
         <span className="mx-2">/</span>
-        <span className="font-medium text-gray-800">남북법비교</span>
+        <span className="font-medium text-gray-800">남북비교</span>
       </nav>
 
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-gray-800">남북법 매핑 목록</h1>
+        <h1 className="text-2xl font-bold text-gray-800">남북 법률 비교</h1>
         <div className="flex gap-3">
           <Link
             href="/compare/terms"
             className="rounded-lg border border-navy-light px-4 py-2 text-sm font-medium text-navy-light transition-colors hover:bg-navy-light hover:text-white"
           >
-            용어 대조표
+            용어비교
           </Link>
+        </div>
+      </div>
+
+      {/* 무엇을 비교해 주나 + 대표 사례(T42) */}
+      <div className="mb-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <p className="text-sm text-gray-700">
+          북한 법령마다 대응하는 남한 법령을 짝지어 <strong>겹치는 영역</strong>, <strong>북한·남한 고유 규정</strong>,{" "}
+          <strong>조문 대응</strong>, <strong>장·편 체계</strong>를 나란히 보여 줍니다.
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="text-sm font-semibold text-gray-800">대표 사례</span>
+          {COMPARE_QUICK_PICKS.map((n) => (
+            <Link
+              key={n}
+              href={`/compare/${encodeURIComponent(n)}`}
+              className="rounded-full border border-navy-light/40 bg-navy-light/5 px-3 py-1 text-sm font-medium text-navy transition-colors hover:bg-navy-light hover:text-white"
+            >
+              {n}
+            </Link>
+          ))}
         </div>
       </div>
 
