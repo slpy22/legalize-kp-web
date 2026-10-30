@@ -380,13 +380,16 @@ export default function ChatWidget() {
                 send(input);
               }
             }}
-            placeholder="북한 법령에 대해 질문해 보세요... (Shift+Enter: 줄바꿈)"
+            // T41: 예전 문구는 "(Shift+Enter: 줄바꿈)" 까지 붙어 모든 폭에서 두 줄이 되어 둘째 줄이 잘렸다.
+            // 한 줄 문구로 줄이고, 줄바꿈 안내는 아래 .chat-hint(마우스 기기에서만)로 옮겼다.
+            placeholder="북한 법령에 대해 질문하세요"
             disabled={busy}
             autoFocus
             rows={1}
+            className="chat-input"
             style={{
               flex: 1, padding: "10px 16px", border: "1px solid #d1d5db", borderRadius: 8,
-              fontSize: 14, outline: "none", resize: "none", overflow: "hidden",
+              outline: "none", resize: "none", overflow: "hidden",
               lineHeight: 1.5, minHeight: 42, maxHeight: 200,
             }}
           />
@@ -395,6 +398,8 @@ export default function ChatWidget() {
             {busy ? "..." : "전송"}
           </button>
         </form>
+        {/* Shift+Enter 안내(T41). 화면 키보드에는 Shift+Enter 가 없어 마우스·키보드 기기에서만 보인다 */}
+        <p className="chat-hint">Enter 전송 · Shift+Enter 줄바꿈</p>
       </div>
 
       <style>{`
@@ -406,6 +411,12 @@ export default function ChatWidget() {
         .dot1 { animation-delay: 0s; }
         .dot2 { animation-delay: 0.2s; }
         .dot3 { animation-delay: 0.4s; }
+        /* T41: 입력창 글자. 터치 기기는 16px — iOS Safari 는 16px 보다 작은 입력창에 손대면 화면을 확대한다 */
+        .chat-input { font-size: 14px; }
+        .chat-input::placeholder { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        @media (pointer: coarse) { .chat-input { font-size: 16px; } }
+        .chat-hint { display: none; max-width: 720px; margin: 6px auto 0; font-size: 12px; color: #9ca3af; }
+        @media (hover: hover) and (pointer: fine) { .chat-hint { display: block; } }
         @keyframes bounce {
           0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
           40% { transform: translateY(-8px); opacity: 1; }

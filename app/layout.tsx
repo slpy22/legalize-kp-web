@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Header from "@/components/Header";
 import ConditionalFooter from "@/components/ConditionalFooter";
@@ -17,6 +17,15 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
+
+// T41: 안드로이드(Chrome 108+·Firefox) 화면 키보드가 뜨면 레이아웃 자체를 줄여(resizes-content) 아래에 고정된
+// 챗봇 입력창이 키보드 위로 올라오게 한다. 기본값(resizes-visual)은 키보드가 덮기만 해서 입력창이 가려졌다.
+// iOS Safari 는 이 값을 모르고 무시한다 — 그쪽은 ChatSidebar 의 visualViewport 보정이 맡는다.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  interactiveWidget: "resizes-content",
+};
 
 export const metadata: Metadata = {
   title: {

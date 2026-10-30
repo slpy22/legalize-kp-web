@@ -48,16 +48,55 @@ function useHeaderBottomVar() {
  * - 채팅 이력 유지: 한 번 열린 뒤에는 ChatWidget 을 계속 마운트한 채 패널만 숨겨,
  *   닫았다 열어도 대화 state 가 보존된다 (페이지 리프레시 시에는 초기화).
  */
+/** 화면 키보드 등으로 가려진 화면 아래쪽 높이를 :root 의 --chat-bottom 에 쓴다(T41).
+ *  안드로이드 Chrome·Firefox 는 layout.tsx 의 viewport interactive-widget=resizes-content 로 레이아웃 자체가
+ *  줄어 이 값이 0 이다. iOS Safari 는 그 설정을 모르고 키보드가 화면을 덮기만 해서(visualViewport 만 줄어듦)
+ *  그만큼 패널 아래 끝을 올려 입력창이 키보드 위에 오게 한다. 확대(핀치) 중에는 쓰지 않는다. */
+function useKeyboardInsetVar() {
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const root = document.documentElement;
+    const update = () => {
+      const inset = vv.scale > 1.01 ? 0 : Math.max(0, Math.round(window.innerHeight - (vv.height + vv.offsetTop)));
+      root.style.setProperty("--chat-bottom", `${inset}px`);
+    };
+    update();
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
+  }, []);
+}
+
 export default function ChatSidebar() {
   const { isOpen, close, width, setWidth, isDesktop, setResizing } = useChatSidebar();
   const [mounted, setMounted] = useState(false);
   const resizing = useRef(false);
   useHeaderBottomVar();
+  useKeyboardInsetVar();
 
   // 최초로 열린 시점부터 ChatWidget 을 계속 마운트 유지
   useEffect(() => {
     if (isOpen) setMounted(true);
   }, [isOpen]);
+
+  // 모바일·태블릿(오버레이 화면)에서 열려 있는 동안 뒤 페이지 스크롤을 잠그고, 닫으면 원래 위치로 돌린다(T41).
+  // overflow:hidden 만으로는 iOS Safari 가 막히지 않아 body 를 지금 위치 그대로 고정(position:fixed; top:-scrollY)한다.
+  // 데스크톱(push 레이아웃)은 본문을 함께 보며 쓰므로 잠그지 않는다.
+  useEffect(() => {
+    if (!isOpen || isDesktop) return;
+    const y = window.scrollY;
+    const s = document.body.style;
+    const prev = { position: s.position, top: s.top, left: s.left, right: s.right, width: s.width, overflow: s.overflow };
+    Object.assign(s, { position: "fixed", top: `-${y}px`, left: "0", right: "0", width: "100%", overflow: "hidden" });
+    return () => {
+      Object.assign(s, prev);
+      window.scrollTo({ top: y, behavior: "instant" });
+    };
+  }, [isOpen, isDesktop]);
 
   // ESC 로 닫기
   useEffect(() => {
@@ -107,8 +146,8 @@ export default function ChatSidebar() {
 
       {/* 사이드 패널 — 헤더 아래부터 화면 하단까지. 데스크탑은 드래그로 너비 조절 */}
       <aside
-        style={{ top: CHAT_TOP, width: isDesktop ? width : undefined }}
-        className={`fixed bottom-0 right-0 z-[9991] flex w-full flex-col bg-white shadow-2xl transition-transform duration-300 ease-in-out sm:w-[420px] ${
+        style={{ top: CHAT_TOP, bottom: "var(--chat-bottom, 0px)", width: isDesktop ? width : undefined }}
+        className={`fixed right-0 z-[9991] flex w-full flex-col bg-white shadow-2xl transition-transform duration-300 ease-in-out sm:w-[420px] ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
         aria-hidden={!isOpen}
