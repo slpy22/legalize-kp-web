@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -270,7 +271,9 @@ export default function ChatWidget() {
         <div style={{ maxWidth: 720, margin: "0 auto" }}>
           {msgs.length === 0 && !busy ? (
             <div style={{ textAlign: "center", paddingTop: 80 }}>
-              <div style={{ fontSize: 48, marginBottom: 8 }}>⚖️</div>
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
+                <Image src="/brand/nk-law-mark.png" alt="북한법률정보센터 로고" width={56} height={56} unoptimized />
+              </div>
               <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>북한법 AI 상담</h2>
               <p style={{ fontSize: 14, color: "#9ca3af", marginBottom: 32 }}>북한 법령에 대해 궁금한 것을 질문해 보세요.</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 400, margin: "0 auto", minHeight: 140 }}>

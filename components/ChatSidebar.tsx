@@ -4,12 +4,45 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import ChatWidget from "@/components/ChatWidget";
 import { useChatSidebar } from "@/components/ChatSidebarProvider";
 
-// 헤더(상단 네비바) 높이. 사이드바가 헤더를 가리지 않도록 이만큼 내린다.
-const HEADER_OFFSET = "49px";
+// 사이드바·오버레이의 top. 헤더(상단 네비바)의 화면상 아래 끝을 CSS 변수로 받는다(T40).
+// 헤더 높이는 화면 폭(데스크톱 56·모바일 64)과 모바일 메뉴 펼침에 따라 바뀌고, 헤더는 스크롤과 함께
+// 올라가므로 고정값(예전 49px)이면 헤더를 덮거나 위에 틈이 생겼다. 값이 오기 전에는 56px.
+const CHAT_TOP = "var(--chat-top, 56px)";
+
+/** 헤더 아래 끝(화면 기준, 0 이상)을 :root 의 --chat-top 에 계속 써 둔다. React state 를 쓰지 않아
+ *  스크롤 중에도 사이드바(ChatWidget)를 다시 그리지 않는다. */
+function useHeaderBottomVar() {
+  useEffect(() => {
+    const header = document.querySelector("header");
+    if (!header) return;
+    const root = document.documentElement;
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const bottom = Math.max(0, Math.round(header.getBoundingClientRect().bottom));
+      root.style.setProperty("--chat-top", `${bottom}px`);
+    };
+    const schedule = () => {
+      if (!raf) raf = requestAnimationFrame(update);
+    };
+    update();
+    const ro = new ResizeObserver(schedule);  // 폭 변화·모바일 메뉴 펼침/접힘
+    ro.observe(header);
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
+}
 
 /**
  * 오른쪽에서 슬라이드되는 채팅 사이드바.
- * - 헤더 아래(top: 49px)부터 시작해 상단 네비바를 가리지 않는다.
+ * - 헤더의 화면상 아래 끝(--chat-top)부터 시작해 상단 네비바를 가리지 않는다. 스크롤로 헤더가
+ *   올라가면 그만큼 위로 붙어 틈이 생기지 않는다(T40).
  * - 데스크탑: 메인 영역과 공존(메인은 MainShell 이 오른쪽으로 밀어줌). 오버레이 없음.
  * - 모바일: 화면 대부분을 덮는 패널 + 어두운 오버레이.
  * - 채팅 이력 유지: 한 번 열린 뒤에는 ChatWidget 을 계속 마운트한 채 패널만 숨겨,
@@ -19,6 +52,7 @@ export default function ChatSidebar() {
   const { isOpen, close, width, setWidth, isDesktop, setResizing } = useChatSidebar();
   const [mounted, setMounted] = useState(false);
   const resizing = useRef(false);
+  useHeaderBottomVar();
 
   // 최초로 열린 시점부터 ChatWidget 을 계속 마운트 유지
   useEffect(() => {
@@ -64,7 +98,7 @@ export default function ChatSidebar() {
       {/* 모바일 전용 오버레이 (데스크탑은 push 레이아웃이라 불필요). 헤더는 가리지 않음 */}
       <div
         onClick={close}
-        style={{ top: HEADER_OFFSET }}
+        style={{ top: CHAT_TOP }}
         className={`fixed inset-x-0 bottom-0 z-[9990] bg-black/30 transition-opacity lg:hidden ${
           isOpen ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
@@ -73,7 +107,7 @@ export default function ChatSidebar() {
 
       {/* 사이드 패널 — 헤더 아래부터 화면 하단까지. 데스크탑은 드래그로 너비 조절 */}
       <aside
-        style={{ top: HEADER_OFFSET, width: isDesktop ? width : undefined }}
+        style={{ top: CHAT_TOP, width: isDesktop ? width : undefined }}
         className={`fixed bottom-0 right-0 z-[9991] flex w-full flex-col bg-white shadow-2xl transition-transform duration-300 ease-in-out sm:w-[420px] ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}

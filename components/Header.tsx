@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useChatSidebar } from "@/components/ChatSidebarProvider";
@@ -43,7 +44,15 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [groupOpen, setGroupOpen] = useState(false);
   const groupRef = useRef<HTMLDivElement>(null);
-  const { toggle: toggleChat } = useChatSidebar();
+  const { toggle: toggleChat, isOpen: chatOpen } = useChatSidebar();
+
+  // 챗봇이 열리면 모바일 메뉴를 접는다(T40). 펼친 메뉴만큼 헤더가 길어져 채팅창이 그 아래로 짧게 열렸다.
+  // effect 대신 렌더 중에 이전 값과 비교한다(React 권장 패턴).
+  const [prevChatOpen, setPrevChatOpen] = useState(chatOpen);
+  if (chatOpen !== prevChatOpen) {
+    setPrevChatOpen(chatOpen);
+    if (chatOpen) setMenuOpen(false);
+  }
 
   // 그룹 드롭다운: 외부 클릭/Esc 로 닫기
   useEffect(() => {
@@ -69,9 +78,15 @@ export default function Header() {
         <div className="flex items-baseline gap-2">
           <Link
             href="/"
-            className="text-base font-bold tracking-tight sm:text-lg"
+            className="flex items-baseline gap-2 text-base font-bold tracking-tight sm:text-lg"
             onClick={() => setMenuOpen(false)}
           >
+            {/* 사이트 아이콘(T39). 남색 헤더에서 보이도록 흰 둥근 판에 얹는다(파비콘과 같은 흰 바탕·남색 그림).
+                높이는 타이틀 줄 높이(모바일 24px·sm 이상 28px)에 맞춰 헤더 높이를 바꾸지 않는다.
+                옆 글자와 같은 링크라 alt 는 비운다(화면낭독기가 이름을 두 번 읽지 않게). */}
+            <span className="flex h-6 w-6 shrink-0 self-center rounded-md bg-white p-0.5 sm:h-7 sm:w-7">
+              <Image src="/brand/nk-law-mark.png" alt="" width={24} height={24} unoptimized className="h-full w-full" />
+            </span>
             북한법률정보센터
           </Link>
           <a
