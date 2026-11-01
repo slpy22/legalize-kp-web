@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
@@ -35,6 +35,34 @@ function DiffContent() {
   const [error, setError] = useState("");
   const [report, setReport] = useState<DiffReportData | null>(null);
   const [reportLoading, setReportLoading] = useState(false);
+  // T74: 리포트는 서버가 백그라운드로 만든다(1~2분). 진행 중이면 몇 초마다 같은 요청을 다시 보낸다.
+  const [reportError, setReportError] = useState("");
+  const [reportStarted, setReportStarted] = useState(0);   // 화면에서 기다리기 시작한 시각(ms)
+  const [retryAt, setRetryAt] = useState(0);               // 실패 뒤 다시 시도할 수 있는 시각(ms)
+  const [now, setNow] = useState(() => Date.now());
+  const reportRun = useRef(0);                             // 바뀌면 이전 다시 묻기를 멈춘다
+
+  function stopReport() {
+    reportRun.current += 1;
+    setReport(null);
+    setReportLoading(false);
+    setReportError("");
+    setRetryAt(0);
+  }
+
+  // 화면을 떠나면 다시 묻기를 멈춘다(서버의 생성은 계속되고 저장된다)
+  useEffect(() => () => { reportRun.current += 1; }, []);
+
+  // 기다리는 동안·다시 시도 대기 동안 1초마다 경과 시간을 갱신
+  useEffect(() => {
+    if (!reportLoading && retryAt <= Date.now()) return;
+    const t = setInterval(() => {
+      const n = Date.now();
+      setNow(n);
+      if (!reportLoading && n >= retryAt) clearInterval(t);   // 다시 시도 대기가 끝나면 멈춘다
+    }, 1000);
+    return () => clearInterval(t);
+  }, [reportLoading, retryAt]);
 
   async function loadVersions(lawName = name, want1 = "", want2 = "") {
     if (!lawName.trim()) return;
@@ -42,7 +70,7 @@ function DiffContent() {
     setLoaded(false);
     setVersions([]);
     setDiff(null);
-    setReport(null);
+    stopReport();
     try {
       const resp = await fetchLawVersions(lawName.trim());
       const vs = resp.versions || [];
@@ -78,7 +106,7 @@ function DiffContent() {
     setLoading(true);
     setError("");
     setDiff(null);
-    setReport(null);
+    stopReport();
     try {
       const d = await fetchDiffSemantic(lawName.trim(), d1, d2);
       setDiff(d);
@@ -91,18 +119,66 @@ function DiffContent() {
   }
 
   async function runReport() {
-    if (!date1 || !date2 || date1 === date2) return;
+    // 화면에 보이는 비교 결과의 법령·두 시점으로 만든다(선택 상자를 바꿔도 결과와 어긋나지 않게)
+    const lawName = diff?.law_name || name.trim();
+    const d1 = diff?.from.version_date || date1;
+    const d2 = diff?.to.version_date || date2;
+    if (!lawName || !d1 || !d2 || d1 === d2) return;
+    const run = ++reportRun.current;
+    const alive = () => reportRun.current === run;
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    setReport(null);
+    setReportError("");
+    setRetryAt(0);
     setReportLoading(true);
-    setError("");
-    try {
-      const r = await fetchDiffReport(name.trim(), date1, date2);
-      setReport(r);
-    } catch {
-      setError("리포트를 생성할 수 없습니다.");
-    } finally {
-      setReportLoading(false);
+    setReportStarted(Date.now());
+    setNow(Date.now());
+    const giveUpAt = Date.now() + 8 * 60 * 1000;   // 서버 생성 상한(6분)보다 넉넉히
+    let netFails = 0;
+    while (alive()) {
+      let r: DiffReportData;
+      try {
+        r = await fetchDiffReport(lawName, d1, d2);
+        netFails = 0;
+      } catch (e) {
+        // 잠깐의 연결 끊김(배포·재시작)은 몇 번 더 묻는다
+        if (++netFails >= 3) {
+          const code = /API (\d+)/.exec(String(e))?.[1];
+          setReportError(`리포트 상태를 확인하지 못했습니다${code ? `(서버 응답 ${code})` : "(연결 실패)"}. 잠시 뒤 다시 시도해 주세요.`);
+          break;
+        }
+        await sleep(5000);
+        continue;
+      }
+      if (!alive()) return;
+      if (r.error) {
+        setReportError(r.error);
+        break;
+      }
+      if (r.status === "pending") {
+        if (Date.now() > giveUpAt) {
+          setReportError("리포트가 너무 오래 걸립니다. 잠시 뒤 다시 시도해 주세요(서버에서 다 만들어지면 바로 보입니다).");
+          break;
+        }
+        await sleep(Math.max(1, r.poll_after_sec ?? 3) * 1000);
+        continue;
+      }
+      if (r.status === "failed") {
+        setReportError(r.message || "리포트를 만들지 못했습니다.");
+        const t = Date.now();
+        setNow(t);   // 남은 초가 서버 값(retry_after_sec)과 같게 보이도록 같은 시각 기준
+        setRetryAt(t + (r.retry_after_sec ?? 0) * 1000);
+        break;
+      }
+      setReport(r);   // done(또는 status 없는 예전 응답)
+      break;
     }
+    if (alive()) setReportLoading(false);
   }
+
+  const elapsed = Math.max(0, Math.floor((now - reportStarted) / 1000));
+  const elapsedText = `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, "0")}`;
+  const retryLeft = Math.max(0, Math.ceil((retryAt - now) / 1000));
 
   const sortedVersions = useMemo(
     () =>
@@ -307,24 +383,50 @@ function DiffContent() {
             <div className="mt-4 border-t border-gray-100 pt-3">
               <button
                 onClick={runReport}
-                disabled={reportLoading}
+                disabled={reportLoading || retryLeft > 0}
                 className="rounded-lg bg-navy px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-navy-light disabled:opacity-50"
               >
-                {reportLoading ? "리포트 생성 중…" : "📄 의미론적 변화 리포트 생성"}
+                {reportLoading
+                  ? "리포트 생성 중…"
+                  : reportError
+                    ? (retryLeft > 0 ? `다시 시도 (${retryLeft}초 뒤)` : "다시 시도")
+                    : "📄 의미론적 변화 리포트 생성"}
               </button>
-              <span className="ml-2 text-xs text-gray-400">
-                변경·신설·삭제를 영역별로 종합 분석합니다
+              <span className="ml-2 text-xs text-gray-500">
+                변경·신설·삭제를 영역별로 종합 분석합니다 · 처음 만들 때는 1~2분 걸릴 수 있습니다
               </span>
+              {reportLoading && (
+                <div className="mt-3 rounded-lg bg-navy-light/5 px-4 py-3 text-sm text-navy" role="status" aria-live="polite">
+                  <p>
+                    AI 변화 리포트를 만드는 중입니다… <span className="tabular-nums">{elapsedText}</span> 경과
+                  </p>
+                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-navy-light/15" aria-hidden="true">
+                    <div
+                      className="h-full rounded-full bg-navy-light transition-[width] duration-1000 ease-linear"
+                      style={{ width: `${Math.min(95, Math.round((elapsed / 120) * 100))}%` }}
+                    />
+                  </div>
+                  <p className="mt-2 text-xs text-gray-600">
+                    1~2분 걸릴 수 있습니다. 만든 리포트는 저장되어, 이 화면을 떠났다가 다시 눌러도 이어서 받습니다.
+                  </p>
+                </div>
+              )}
+              {reportError && !reportLoading && (
+                <p className="mt-3 rounded-lg bg-rose-50 px-4 py-3 text-sm text-rose-700" role="alert">
+                  {reportError}
+                </p>
+              )}
             </div>
           </div>
 
           {/* 의미론적 변화 리포트 */}
-          {report && (
+          {report && report.report && (
             <div className="rounded-lg border border-navy-light/30 bg-white p-6 shadow-sm">
               <div className="mb-4 flex items-center gap-2 border-b border-gray-100 pb-3">
                 <h2 className="text-lg font-bold text-navy">변화 리포트</h2>
                 <span className="text-xs text-gray-500">
                   {report.from.version_date} → {report.to.version_date} · AI 종합 분석
+                  {report.generated_at ? ` · ${report.generated_at.slice(0, 16)} 작성` : ""}
                 </span>
               </div>
               <article className="prose prose-sm max-w-none prose-headings:text-navy prose-h2:mt-5 prose-h2:text-base prose-strong:text-gray-900">

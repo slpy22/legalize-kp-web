@@ -317,14 +317,29 @@ export interface SemanticDiffData {
   pairs: SemanticDiffPair[];
 }
 
-/** 의미론적 변화 리포트 (action=diff_report) */
+/** 의미론적 변화 리포트 (action=diff_report)
+ *
+ * 만드는 데 1~2분 걸려 서버가 백그라운드로 만들고 저장한다. status 로 구분한다.
+ * - done: 리포트(cached=저장본에서 바로, generated_at=만든 시각)
+ * - pending: 만드는 중 — poll_after_sec 뒤 같은 요청을 다시 보낸다
+ * - failed: message 에 실패 사유, retry_after_sec 뒤 다시 시도하면 새로 만든다
+ * status 가 없으면(예전 서버) done 으로 본다.
+ */
 export interface DiffReportData {
+  status?: "done" | "pending" | "failed";
   law_name: string;
-  from: { version_date: string; action: string | null; source: string | null };
-  to: { version_date: string; action: string | null; source: string | null };
-  summary: { added: number; removed: number; modified: number; same: number };
-  method: "semantic" | "article_number";
-  report: string; // 마크다운
+  from: { version_date: string; action?: string | null; source?: string | null };
+  to: { version_date: string; action?: string | null; source?: string | null };
+  summary?: { added: number; removed: number; modified: number; same: number };
+  method?: "semantic" | "article_number";
+  report?: string; // 마크다운
+  cached?: boolean;
+  generated_at?: string;
+  elapsed_sec?: number;
+  poll_after_sec?: number;
+  retry_after_sec?: number;
+  message?: string;
+  error?: string;
 }
 
 /* ── 법령 개요 ── */

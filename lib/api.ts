@@ -117,7 +117,8 @@ export async function fetchDiffSemantic(
   );
 }
 
-/** 의미론적 변화 리포트 — diff_semantic 결과를 LLM이 체계적 마크다운 리포트로 종합 */
+/** 의미론적 변화 리포트 — diff_semantic 결과를 LLM이 체계적 마크다운 리포트로 종합.
+ *  한 번 부르면 결과(done)·진행 중(pending)·실패(failed) 중 하나가 온다. pending 이면 같은 요청을 다시 부른다. */
 export async function fetchDiffReport(
   name: string,
   fromDate: string,
