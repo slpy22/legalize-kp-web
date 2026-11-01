@@ -436,7 +436,7 @@ export default function ChatWidget() {
         {limited && (
           <div role="status" style={{ maxWidth: 720, margin: "0 auto 10px", padding: "12px 14px", borderRadius: 8, background: "#eff6ff", border: "1px solid #bfdbfe", fontSize: 14, color: "#1e3a8a", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
             <span style={{ flex: "1 1 220px" }}>
-              비회원은 하루 {quota?.free_per_day ?? 1}번 질문할 수 있습니다. 로그인하면 횟수 제한 없이 이용할 수 있습니다.
+              비회원은 하루 {quota?.free_per_day ?? 3}번 질문할 수 있습니다. 로그인하면 횟수 제한 없이 이용할 수 있습니다.
             </span>
             <a href={loginHref} style={{ padding: "8px 16px", borderRadius: 8, background: "#1a365d", color: "#fff", fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}>
               로그인

@@ -83,13 +83,21 @@ export default function AdminPage() {
         </div>
       </div>
       <p className="mt-1 text-xs text-gray-400">집계만 표시합니다(개별 회원 정보 없음). 검색어는 3회 이상 나온 것만 보입니다.</p>
-      {d.ip_status?.missing_recent && (
-        // T67: 원본 IP 가 오지 않으면(예: 포트 게시가 주소를 바꿈) IP 기반 기능이 꺼진 채로 돈다
+      {d.ip_status?.missing_recent ? (
+        // T67: 원본 IP 가 오지 않으면(예: 포트 게시가 주소를 바꿈) IP 기반 기능이 꺼진 채로 돈다.
+        // T71: 공유기 경유·관리자 본인 접속(늘 사설)만으로는 띄우지 않는다 — 공인 IP 가 1시간 넘게 없을 때만
         <p role="alert" className="mt-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <strong>실제 IP 미수신</strong> — 최근 1시간 안에 바깥 요청의 실제 IP 를 받지 못했습니다(마지막 {d.ip_status.last_missing_kst}).
+          <strong>실제 IP 미수신</strong> — 최근 1시간 동안 바깥 요청이 모두 내부망 주소로 들어왔고 실제(공인) IP 는 하나도 없었습니다
+          (내부망 {d.ip_status.private_1h ?? "?"}건, 마지막 공인 IP {d.ip_status.last_public_kst ?? "없음"}).
           그동안 IP 기반 요청 제한·챗봇 IP 백스톱·&lsquo;쿠키 없이 집계&rsquo;·접속 국가가 멈춥니다. nginx·포트 게시가 원본 IP 를 넘기는지 확인하세요.
         </p>
-      )}
+      ) : d.ip_status?.last_public_kst ? (
+        <p className="mt-2 text-xs text-gray-500">
+          <span aria-hidden className="mr-1 text-emerald-600">●</span>
+          실제 IP 수신 중(마지막 {d.ip_status.last_public_kst}) · 최근 1시간 공인 {d.ip_status.public_1h ?? 0} / 내부망 {d.ip_status.private_1h ?? 0}
+          {" "}— 내부망(공유기 경유)·관리자 본인 접속은 국가 없이 셉니다
+        </p>
+      ) : null}
 
       <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[

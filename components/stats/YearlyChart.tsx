@@ -26,10 +26,10 @@ function niceMax(v: number): number {
   return 10 * step;
 }
 
-export default function YearlyChart({ rows }: { rows: YearRow[] }) {
+export default function YearlyChart({ rows, defaultRecent = false }: { rows: YearRow[]; defaultRecent?: boolean }) {
   const series = SERIES.filter((s) => s.key !== "repealed" || rows.some((r) => r.repealed > 0));
   const [key, setKey] = useState<SeriesKey>("amended");
-  const [recent, setRecent] = useState(false);
+  const [recent, setRecent] = useState(defaultRecent);   // T70: 홈은 최근 30년으로 시작
   const [hover, setHover] = useState<number | null>(null);
 
   // 빈 해는 0 으로 채운다(막대 간격이 시간 간격과 같게)

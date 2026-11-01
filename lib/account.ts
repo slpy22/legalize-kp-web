@@ -43,7 +43,14 @@ export interface AdminUsage {
   visitors?: AdminVisitors;   // T52
   geoip?: { available: boolean; attribution: string; attribution_url: string };
   // T67: 바깥 요청의 실제(공인) IP 를 못 받고 있는지 — 그동안 IP 기반 제한·국가·쿠키 없이 집계가 멈춘다
-  ip_status?: { missing_recent: boolean; last_missing_kst: string | null; last_public_kst: string | null };
+  // T71: missing_recent 는 사설만 있고 공인이 1시간 넘게 없을 때만. 최근 1시간 바깥 API 요청 수(공인·사설)
+  ip_status?: {
+    missing_recent: boolean;
+    last_missing_kst: string | null;
+    last_public_kst: string | null;
+    public_1h?: number;
+    private_1h?: number;
+  };
 }
 
 /** T52 방문자 수·국가·봇(/api/v1/admin/usage 의 visitors) */

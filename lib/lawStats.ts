@@ -91,6 +91,17 @@ export async function getLawStats(): Promise<LawStats> {
   return inflight;
 }
 
+/**
+ * 홈(T70)용 — 홈을 늦추지 않는다. 담아 둔 값이 있으면(6시간이 지났어도) 바로 주고 뒤에서 새로 센다.
+ * 담아 둔 값이 없으면 waitMs 만 기다리고, 그 안에 못 끝나면 null(계산은 계속돼 다음 요청부터 보인다).
+ */
+export async function getLawStatsQuick(waitMs = 1500): Promise<LawStats | null> {
+  const stale = cached?.value ?? null;
+  const fresh = getLawStats().catch(() => null);
+  if (stale) return stale;
+  return Promise.race([fresh, new Promise<null>((r) => setTimeout(() => r(null), waitMs))]);
+}
+
 /** 판본 날짜 기준 최근 개정(T42 홈) — 개정 이력이 있는 법령을 최신 판본일 순으로 */
 export function recentAmendments(laws: LawSummary[], n: number): LawSummary[] {
   return laws

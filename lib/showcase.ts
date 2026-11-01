@@ -135,5 +135,5 @@ export const AUDIENCES: { who: string; task: string; label: string; href: string
   { who: "법조인", task: "북한 규정에 대응하는 남한 법·조문 확인", label: "형법 남북 비교", href: "/compare/" + encodeURIComponent("형법") },
   { who: "학생", task: "낯선 북한 법률 용어를 남한 용어로 이해", label: "용어 비교", href: "/compare/terms" },
   { who: "언론", task: "최근 개정의 핵심 변화와 근거 조문 파악", label: "대표 비교 보기", href: "/diff" },
-  { who: "일반", task: "궁금한 것을 말로 묻고 근거 조문과 함께 답 받기", label: "AI 에게 묻기", href: "#ai" },
+  { who: "일반", task: "궁금한 것을 말로 묻고 근거 조문과 함께 답 받기", label: "AI 에게 묻기", href: "/chat" },
 ];
