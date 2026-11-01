@@ -187,6 +187,12 @@ function DiffContent() {
       ),
     [versions]
   );
+  // T76: 출처는 코드(mobu·center_input …)가 아니라 사람이 읽는 이름(provenance.label)으로 보인다
+  const srcLabel = (date: string | undefined, code: string | null | undefined) => {
+    const v = versions.find((x) => x.version_date === date);
+    const label = v?.provenance?.label ?? v?.source_desc?.label ?? code;
+    return label ? ` [${label}]` : "";
+  };
 
   // 표시 순서: 변경 → 신설 → 삭제 → (동일)
   const orderedPairs = useMemo(() => {
@@ -268,7 +274,7 @@ function DiffContent() {
                 {sortedVersions.map((v) => (
                   <option key={`f-${v.id}`} value={v.version_date}>
                     {v.version_date}
-                    {v.source ? ` [${v.source}]` : ""}
+                    {srcLabel(v.version_date, v.source)}
                   </option>
                 ))}
               </select>
@@ -284,7 +290,7 @@ function DiffContent() {
                 {sortedVersions.map((v) => (
                   <option key={`t-${v.id}`} value={v.version_date}>
                     {v.version_date}
-                    {v.source ? ` [${v.source}]` : ""}
+                    {srcLabel(v.version_date, v.source)}
                   </option>
                 ))}
               </select>
@@ -351,9 +357,9 @@ function DiffContent() {
             <h2 className="text-lg font-bold text-gray-800">{diff.law_name}</h2>
             <p className="mt-1 text-sm text-gray-600">
               {diff.from.version_date}
-              {diff.from.source ? ` [${diff.from.source}]` : ""} {" → "}
+              {srcLabel(diff.from.version_date, diff.from.source)} {" → "}
               {diff.to.version_date}
-              {diff.to.source ? ` [${diff.to.source}]` : ""}
+              {srcLabel(diff.to.version_date, diff.to.source)}
               {diff.method === "semantic" ? " · 의미 매칭" : " · 조문번호 매칭"}
             </p>
             <div className="mt-3 flex flex-wrap gap-3 text-sm">
