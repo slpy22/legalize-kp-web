@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
+import LawNameInput from "@/components/LawNameInput";
 
 const MODES = [
   { value: "keyword", label: "키워드" },
@@ -24,11 +25,14 @@ export default function SearchBar({
   const [query, setQuery] = useState(initialQuery);
   const [mode, setMode] = useState(initialMode || "hybrid");
 
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
+  const search = () => {
     const q = query.trim();
     if (!q) return;
     router.push(`/search?q=${encodeURIComponent(q)}&mode=${mode}`);
+  };
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    search();
   };
 
   const isLarge = size === "large";
@@ -37,12 +41,16 @@ export default function SearchBar({
     <form onSubmit={handleSubmit} className="w-full">
       {/* 검색 입력 + 버튼 */}
       <div className="flex gap-2">
-        <input
-          type="text"
+        {/* T50: 법령명 자동완성 — 후보를 고르면 그 법령으로, 그냥 Enter 면 키워드 검색 */}
+        <LawNameInput
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={setQuery}
+          onSelect={(n) => router.push(`/law/${encodeURIComponent(n)}`)}
+          onEnter={search}
+          label="법령명 또는 키워드"
           placeholder="법령명 또는 키워드를 입력하세요"
-          className={`flex-1 rounded-lg border border-gray-300 bg-white text-gray-900 focus:border-navy-light focus:outline-none focus:ring-2 focus:ring-navy-light/30 ${
+          className="min-w-0 flex-1"
+          inputClassName={`w-full rounded-lg border border-gray-300 bg-white text-gray-900 focus:border-navy-light focus:outline-none focus:ring-2 focus:ring-navy-light/30 ${
             isLarge ? "px-4 py-3 text-base sm:px-5 sm:py-3.5 sm:text-lg" : "px-4 py-2.5 text-base"
           }`}
         />

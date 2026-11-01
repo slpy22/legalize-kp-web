@@ -3,9 +3,10 @@
 import { Suspense, useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { fetchCompareTerms } from "@/lib/api";
+import { fetchCompareCategories, fetchCompareTerms } from "@/lib/api";
 import { track } from "@/lib/track";
 import Pagination from "@/components/Pagination";
+import AutoNotice from "@/components/compare/AutoNotice";
 
 interface TermRow {
   kp_term: string;
@@ -59,10 +60,8 @@ function TermsContent() {
       setTotalPages(meta.total_pages);
       // extract categories on first load
       if (!selectedCat && !debouncedQuery && page === 1 && Array.isArray(terms)) {
-        const { data: allData } = await fetchCompareTerms(undefined, undefined, 1, 500);
-        const allTerms = allData.terms || [];
-        const cats = [...new Set(allTerms.map((r: TermRow) => r.category).filter(Boolean))] as string[];
-        setCategories(cats.sort());
+        // T47: 분류 목록만 따로 받는다(바깥 요청은 per_page 50 까지)
+        setCategories(await fetchCompareCategories("term"));
       }
     } catch {
       setError("용어 데이터를 불러올 수 없습니다.");
@@ -91,6 +90,7 @@ function TermsContent() {
       <p className="mb-6 text-sm text-gray-500">
         같은 제도를 남북이 다른 말로 부르는 경우가 많습니다. 북한 법률 용어와 대응하는 남한 용어를 찾아보세요(북한어·남한어 어느 쪽으로도 검색).
       </p>
+      <AutoNotice className="mb-6" />
 
       {/* 검색 + 필터 */}
       <div className="mb-6 flex flex-wrap gap-3">
@@ -128,7 +128,7 @@ function TermsContent() {
                   <th className="px-4 py-3 text-left font-semibold">북한어</th>
                   <th className="px-4 py-3 text-left font-semibold">남한어</th>
                   <th className="px-4 py-3 text-left font-semibold">분류</th>
-                  <th className="px-4 py-3 text-center font-semibold">검수여부</th>
+                  {/* T57: '검수 완료'(verified)는 실제 검수 기록이 없는 일괄 표시라 내렸다(T49) */}
                 </tr>
               </thead>
               <tbody>
@@ -140,17 +140,6 @@ function TermsContent() {
                     <td className="px-4 py-3 font-medium text-navy">{row.kp_term}</td>
                     <td className="px-4 py-3 text-gray-800">{row.kr_term}</td>
                     <td className="px-4 py-3 text-gray-600">{row.category || "-"}</td>
-                    <td className="px-4 py-3 text-center">
-                      {row.verified ? (
-                        <span className="inline-block rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">
-                          완료
-                        </span>
-                      ) : (
-                        <span className="inline-block rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-500">
-                          미검수
-                        </span>
-                      )}
-                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -95,6 +95,14 @@ function ConsentContent() {
         <strong>{info.email}</strong>
         {info.name ? ` (${info.name})` : ""} 계정으로 가입합니다. 동의하기 전에는 아무 정보도 저장되지 않습니다.
       </p>
+      {info.existing && (
+        // T47·T51·T52: 문서 버전 2026-10-30.2 — 바뀐 내용을 한 번에 알린다(재동의 한 번)
+        <p className="mt-3 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          이번에 바뀐 내용: <Link href="/terms#copyright" target="_blank" className="font-semibold underline">이용약관</Link> 제6조 데이터 이용 조건과
+          AI 상담 이용 한도, <Link href="/privacy#items" target="_blank" className="font-semibold underline">개인정보 처리방침</Link>의 IP 주소 일시 처리·방문자 쿠키·AI 상담
+          이용 횟수 쿠키·접속 국가 통계.
+        </p>
+      )}
 
       <label className="mt-6 flex items-center gap-3 rounded-lg border-2 border-navy-light/40 bg-navy-light/5 px-4 py-3 font-semibold text-navy">
         <input

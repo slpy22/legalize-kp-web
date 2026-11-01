@@ -20,6 +20,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // T43: 처리방침·약관
     { url: `${BASE}/privacy`, changeFrequency: "yearly", priority: 0.3 },
     { url: `${BASE}/terms`, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${BASE}/about/data`, changeFrequency: "yearly", priority: 0.4 },  // T47
   ];
 
   // 법령 페이지 (310개)

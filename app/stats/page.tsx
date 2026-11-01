@@ -30,6 +30,9 @@ export default async function StatsPage() {
   const recent5 = stats && lastYear ? stats.rows.filter((r) => r.year > lastYear - 5).reduce((n, r) => n + r.amended, 0) : null;
   const tiles = [
     { label: "총 법령", value: ref?.total_laws ?? stats?.totals.laws },
+    // T54: 본문 보유 / 미확보
+    { label: "본문 보유 법령", value: ref?.total_with_text },
+    { label: "본문 미확보 법령", value: ref?.total_unavailable },
     { label: "개정 기록", value: stats?.totals.amended },
     { label: "본문 보유 판본", value: stats?.totals.versions },
     { label: lastYear ? `최근 5년 개정(${lastYear - 4}–${lastYear})` : "최근 5년 개정", value: recent5 ?? undefined },

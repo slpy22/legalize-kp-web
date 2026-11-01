@@ -5,9 +5,11 @@ import ProvenanceBadges from "@/components/ProvenanceBadges";
 interface Props {
   amendments: Amendment[];
   lawName?: string;
+  /** T47: 일자 → 그 일자의 센터 추적 항목 앵커(#ct-…). 있으면 '센터 추적 근거' 배지를 단다 */
+  trackedByDate?: Record<string, string>;
 }
 
-export default function AmendmentTimeline({ amendments, lawName }: Props) {
+export default function AmendmentTimeline({ amendments, lawName, trackedByDate }: Props) {
   return (
     <div className="relative ml-4">
       {/* 세로 라인 */}
@@ -57,6 +59,15 @@ export default function AmendmentTimeline({ amendments, lawName }: Props) {
                   {item.effective_date && (
                     <span className="text-xs text-gray-500">시행 {item.effective_date}</span>
                   )}
+                  {trackedByDate?.[item.date] && (
+                    <a
+                      href={`#${trackedByDate[item.date]}`}
+                      className="rounded-full bg-violet-50 px-2 py-0.5 text-xs font-medium text-violet-700 hover:underline"
+                      title="센터가 북한 매체·논문으로 추적한 근거가 있습니다"
+                    >
+                      센터 추적 근거
+                    </a>
+                  )}
                 </div>
                 {item.basis && (
                   <p className="mt-2 text-sm text-gray-600">{item.basis}</p>
@@ -83,7 +94,7 @@ export default function AmendmentTimeline({ amendments, lawName }: Props) {
                       href={`/diff?name=${encodeURIComponent(lawName)}`}
                       className="text-navy-light hover:underline"
                     >
-                      신구대조
+                      신구비교
                     </Link>
                   </div>
                 )}

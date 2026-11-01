@@ -20,6 +20,9 @@ export interface LawSummary {
   chapter_count: number;
   amendment_count: number;
   source: string;
+  name_alias?: string[] | string | null;   // T50: 자동완성 별칭(목록 API 가 frontmatter name_alias 를 그대로 준다)
+  aliases?: string[];                      // T54: 별칭·약칭·옛 이름을 합친 목록
+  text_unavailable?: boolean;              // T54: 본문 미확보 법령
 }
 
 /* ── 출처 표시 (T7) ── */
@@ -63,6 +66,22 @@ export interface LawMeta {
   provenance: Provenance;
   aliases: string[];
   date_disputes: DateDispute[];
+  text?: TextStatus;   // T54: 본문 보유 상태
+}
+
+/** 본문 보유 상태(T54) — available=false 면 본문 미확보 법령(근거·확실성 동봉) */
+export interface TextStatus {
+  available: boolean;
+  adopted?: string | null;        // T54 ver2: 채택 일자('YYYY-MM' 처럼 월까지만 알 수도)
+  latest?: string | null;         // T54 ver2: 알려진 마지막 일자
+  state?: string;                 // 미확보 | 일부조문인용
+  certainty?: string | null;      // 확인 | 추정
+  existence_basis?: string | null; // 강 | 중 | 약
+  name_confirmed?: boolean | null;
+  evidence?: { type: string | null; title: string | null; author: string | null; issue: string | null; date: string | null; page: string | null; url: string | null }[];
+  same_law_review?: Record<string, unknown> | null;
+  center_tracked_id?: string | null;
+  notice?: string;
 }
 
 /* ── 조문 ── */
@@ -94,6 +113,16 @@ export interface LawDetail {
   articles: Article[];
   total_articles: number;
   meta?: LawMeta; // T4/T7: 출처 설명·출처표시·별칭·날짜이견
+  excerpt?: ExcerptInfo; // T66: 최신 판본이 일부본이면 빠진 조와 직전 전문 판본
+}
+
+/** T66: 최신 판본이 일부본(발췌본)일 때 — 빠진 조는 직전 전문 판본에서(최신 판본에 합치지 않음) */
+export interface ExcerptInfo {
+  latest_version: string;
+  fallback_version: string;
+  fallback_source: string | null;
+  missing: string[];
+  notice: string;
 }
 
 /* ── 개정 내역 ── */
@@ -112,9 +141,35 @@ export interface Amendment {
   provenance?: Provenance | null; // 본문 보유 판본의 출처 표시
 }
 
+/** 센터 추적 개정 이력(T47) — 공식 공개 이력과 별개로 센터가 북한 매체·학보 논문 등으로 추적한 개정 */
+export interface CenterTracked {
+  id: string | null;
+  law: string;
+  date: string;
+  action: string;
+  kind: "이력추가" | "날짜이견";
+  decree: string | null;
+  summary: string;
+  certainty: "확인" | "추정";
+  evidence: {
+    type: string | null;
+    title: string | null;
+    author: string | null;
+    issue: string | null;
+    date: string | null;
+    page: string | null;
+    url: string | null;
+  }[];
+  in_official: boolean;
+  official_note: string | null;
+  needs_check: boolean;
+}
+
 export interface HistoryData {
   law_name: string;
   amendments: Amendment[];
+  center_tracked?: CenterTracked[];
+  text?: TextStatus;   // T54
   provenance?: Provenance;
   date_disputes?: DateDispute[];
   aliases?: string[];
@@ -166,6 +221,8 @@ export interface CategoryInfo {
 /* ── 참조 데이터 (카테고리 목록 + 총 법령 수) ── */
 export interface RefData {
   total_laws: number;
+  total_with_text?: number;      // T54: 본문 보유
+  total_unavailable?: number;    // T54: 본문 미확보
   categories: CategoryInfo[];
 }
 

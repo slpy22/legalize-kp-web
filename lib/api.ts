@@ -241,6 +241,12 @@ export async function fetchCompareTerms(
   return apiWithMeta<any>(url);
 }
 
+/** 분류 목록(화면의 분류 선택용, T47) — 예전에는 분류를 뽑으려고 per_page=500 으로 전체를 받았다 */
+export async function fetchCompareCategories(of: "mapping" | "term"): Promise<string[]> {
+  const d = await api<{ categories: string[] }>(`/api/v1/compare/?action=${of}_categories`);
+  return d.categories || [];
+}
+
 /** 체계 비교 */
 export async function fetchCompareStructure(kpName: string, krName: string) {
   return api<any>(

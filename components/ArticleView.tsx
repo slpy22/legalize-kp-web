@@ -6,6 +6,29 @@ import type { Article } from "@/lib/types";
 
 interface Props {
   articles: Article[];
+  /** T66: 최신 판본(일부본)에 없는 조 — before(이 조 앞에, null 이면 끝에)에 자리 표시를 끼운다 */
+  gaps?: { before: string | null; numbers: string[] }[];
+  gapVersion?: string;            // 직전 전문 판본 일자
+  gapLink?: string;               // 직전 전문 판본 주소(/law/…?version=…) — 서버 컴포넌트가 넘기므로 함수가 아닌 문자열
+}
+
+function GapBox({ numbers, version, link }: { numbers: string[]; version?: string; link?: string }) {
+  return (
+    <div className="my-4 rounded-md border border-dashed border-amber-300 bg-amber-50/60 px-4 py-3 text-sm text-amber-900">
+      {numbers.map((n, i) => (
+        <span key={n} id={`article-${n}`}>
+          {i > 0 && "·"}
+          {formatArticleHeading(n)}
+        </span>
+      ))}{" "}
+      — 최신 판본(일부본)에 없는 조입니다.{" "}
+      {link && version && (
+        <a href={`${link}&highlight=${numbers[0]}#article-${numbers[0]}`} className="font-semibold text-navy-light underline">
+          직전 전문 판본({version})에서 보기
+        </a>
+      )}
+    </div>
+  );
 }
 
 /**
@@ -29,7 +52,9 @@ export function formatArticleHeading(num: string | number, title?: string | null
   return `${base}${t ? ` (${t})` : ""}`;
 }
 
-export default function ArticleView({ articles }: Props) {
+export default function ArticleView({ articles, gaps = [], gapVersion, gapLink }: Props) {
+  const gapBefore = new Map(gaps.filter((g) => g.before).map((g) => [g.before as string, g.numbers]));
+  const gapEnd = gaps.filter((g) => !g.before).flatMap((g) => g.numbers);
   const searchParams = useSearchParams();
   const highlight = searchParams.get("highlight");
   const highlightRef = useRef<HTMLDivElement>(null);
@@ -54,9 +79,11 @@ export default function ArticleView({ articles }: Props) {
         if (art.chapter) currentChapter = art.chapter;
         const isHighlighted = highlight === String(art.article_number);
 
+        const gapHere = gapBefore.get(String(art.article_number));
         return (
+          <div key={art.id}>
+          {gapHere && <GapBox numbers={gapHere} version={gapVersion} link={gapLink} />}
           <div
-            key={art.id}
             id={`article-${art.article_number}`}
             ref={isHighlighted ? highlightRef : undefined}
             style={isHighlighted ? {
@@ -74,8 +101,10 @@ export default function ArticleView({ articles }: Props) {
             <h5>{formatArticleHeading(art.article_number, art.article_title)}</h5>
             <p className="whitespace-pre-wrap">{art.content}</p>
           </div>
+          </div>
         );
       })}
+      {gapEnd.length > 0 && <GapBox numbers={gapEnd} version={gapVersion} link={gapLink} />}
     </div>
   );
 }

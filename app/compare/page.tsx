@@ -3,9 +3,10 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { fetchMappings } from "@/lib/api";
+import { fetchCompareCategories, fetchMappings } from "@/lib/api";
 import { COMPARE_QUICK_PICKS } from "@/lib/showcase";
 import Pagination from "@/components/Pagination";
+import AutoNotice from "@/components/compare/AutoNotice";
 
 interface MappingRow {
   kp_name: string;
@@ -82,11 +83,8 @@ function MappingList() {
       setTotalPages(meta.total_pages);
       // extract unique categories for filter (only on first load without filter)
       if (!selectedCat && page === 1 && Array.isArray(mappings)) {
-        // Fetch all to get categories — use a separate request with large per_page
-        const { data: allData } = await fetchMappings(undefined, 1, 500);
-        const allMappings = allData.mappings || [];
-        const cats = [...new Set(allMappings.map((r: MappingRow) => r.kp_category).filter(Boolean))] as string[];
-        setCategories(cats.sort());
+        // T47: 분류 목록만 따로 받는다(예전에는 per_page=500 으로 전체를 받아 뽑았다 — 바깥 요청은 50 까지)
+        setCategories(await fetchCompareCategories("mapping"));
       }
     } catch {
       setError("매핑 데이터를 불러올 수 없습니다.");
@@ -116,6 +114,8 @@ function MappingList() {
           </Link>
         </div>
       </div>
+
+      <AutoNotice className="mb-4" />
 
       {/* 무엇을 비교해 주나 + 대표 사례(T42) */}
       <div className="mb-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
@@ -197,7 +197,7 @@ function MappingList() {
                   <th className="hidden px-4 py-3 text-left font-semibold sm:table-cell">카테고리</th>
                   <th className="px-3 py-3 text-left font-semibold sm:px-4">대응 남한법</th>
                   <th className="hidden px-4 py-3 text-center font-semibold sm:table-cell">관계</th>
-                  <th className="hidden px-4 py-3 text-right font-semibold sm:table-cell">확신도</th>
+                  {/* T57: '확신도'(confidence)는 생성 모델의 자기 평가라 근거가 없어 내렸다(T49) */}
                 </tr>
               </thead>
               <tbody>
@@ -235,13 +235,6 @@ function MappingList() {
                       </td>
                       <td className="hidden px-4 py-3 text-center sm:table-cell">
                         <RelBadge rel={row.relationship} />
-                      </td>
-                      <td className="hidden px-4 py-3 text-right sm:table-cell">
-                        {row.confidence ? (
-                          <span className="text-xs text-gray-600">{row.confidence}</span>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
                       </td>
                     </tr>
                   );

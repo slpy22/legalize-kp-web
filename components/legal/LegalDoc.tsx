@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { DOC_VERSION } from "@/lib/account";
 
-// T44: 사장님 확정(2026-10-30 시행). 바꾸면 DOC_VERSION 도 함께 바꿔 회원 동의를 다시 받는다
+// T44: 2026-10-30 시행. 바꾸면 DOC_VERSION 도 함께 바꿔 회원 동의를 다시 받는다
 export const EFFECTIVE_DATE = "2026-10-30";
 
 /** 처리방침·약관 공용 틀(T43·T44) — 시행일·버전, 목차 */

@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import { fetchLaw, fetchLawVersions } from "@/lib/api";
+import UnavailableNotice from "@/components/UnavailableNotice";
 import ArticleView from "@/components/ArticleView";
 import VersionSelector from "@/components/VersionSelector";
 import VersionFullText from "@/components/VersionFullText";
 import ProvenanceBadges from "@/components/ProvenanceBadges";
-import type { LawVersionDetail } from "@/lib/types";
+import type { LawDetail, LawVersionDetail } from "@/lib/types";
 import { diffHref } from "@/lib/showcase";
 import { TrackOnMount } from "@/components/UsageTracker";
 
@@ -35,6 +36,20 @@ export async function generateMetadata({ params }: { params: Promise<{ name: str
   }
 }
 
+/** T66: 빠진 조 번호들을 '이 조 앞에'(없으면 끝에) 묶음으로 — 이어진 번호는 한 상자에 */
+function buildGaps(missing: string[], present: string[]): { before: string | null; numbers: string[] }[] {
+  const num = (s: string) => (/^\d+$/.test(s) ? parseInt(s, 10) : NaN);
+  return missing.reduce<{ before: string | null; numbers: string[] }[]>((acc, m) => {
+    const n = num(m);
+    const next = Number.isNaN(n) ? undefined : present.find((p) => num(p) > n);
+    const before = next ?? null;
+    const last = acc[acc.length - 1];
+    return last && last.before === before
+      ? [...acc.slice(0, -1), { before, numbers: [...last.numbers, m] }]
+      : [...acc, { before, numbers: [m] }];
+  }, []);
+}
+
 export default async function LawPage({
   params,
   searchParams,
@@ -53,7 +68,12 @@ export default async function LawPage({
   ]);
   const law = data.law;
   const articles = data.articles;
+  const textStatus = data.meta?.text;          // T54: 본문 미확보면 조문 대신 근거·확실성
+  const unavailable = textStatus?.available === false;
   const versionInfo = (data as LawVersionDetail).version; // version param 줬을 때만 존재
+  // T66: 최신 판본이 일부본이면 빠진 조 자리에 직전 전문 판본 링크를 끼운다(다른 판본 조문을 합치지 않음)
+  const excerpt = versionInfo ? undefined : (data as LawDetail).excerpt;
+  const gaps = excerpt ? buildGaps(excerpt.missing, articles.map((a) => String(a.article_number))) : [];
   const versions = versionsResp.versions || [];
   // 최근 두 판본(T42) — 2개 이상이면 '최근 두 판본 비교' 바로가기로 결과까지 한 번에
   const recentTwo = [...versions]
@@ -150,7 +170,8 @@ export default async function LawPage({
           </div>
           <div>
             <dt className="text-gray-500">채택일</dt>
-            <dd className="font-medium">{law.enactment_date ?? "-"}</dd>
+            {/* T54 ver2: 일까지 모르는 채택(본문 미확보 법령)은 'YYYY-MM' 그대로 */}
+            <dd className="font-medium">{law.enactment_date ?? textStatus?.adopted ?? "-"}</dd>
           </div>
           <div>
             <dt className="text-gray-500">
@@ -159,23 +180,28 @@ export default async function LawPage({
             <dd className="font-medium">
               {versionInfo
                 ? versionInfo.version_date
-                : (law.latest_version_date ?? "-")}
+                : (law.latest_version_date ?? textStatus?.latest ?? "-")}
             </dd>
           </div>
           <div>
             <dt className="text-gray-500">조문수</dt>
             <dd className="font-medium">
-              {versionInfo ? articles.length : (law.total_articles ?? 0)}조
+              {unavailable ? "본문 미확보" : `${versionInfo ? articles.length : (law.total_articles ?? 0)}조`}
             </dd>
           </div>
-          <div>
-            <dt className="text-gray-500">장수</dt>
-            <dd className="font-medium">{law.chapter_count}장</dd>
-          </div>
+          {!unavailable && (
+            <div>
+              <dt className="text-gray-500">장수</dt>
+              <dd className="font-medium">{law.chapter_count}장</dd>
+            </div>
+          )}
           <div>
             <dt className="text-gray-500">출처</dt>
             <dd className="font-medium">
-              {versionInfo ? (versionInfo.source ?? "-") : law.source}
+              {/* T54 ver2: 출처 코드 대신 사람이 읽는 이름(예: center_tracked → 센터 추적) */}
+              {versionInfo
+                ? (versionInfo.source_desc?.label ?? versionInfo.source ?? "-")
+                : (data.meta?.source_desc?.label ?? law.source)}
             </dd>
           </div>
         </dl>
@@ -202,12 +228,14 @@ export default async function LawPage({
             최근 두 판본 비교 ({recentTwo[0].slice(0, 4)} → {recentTwo[1].slice(0, 4)})
           </Link>
         )}
-        <Link
-          href={`/diff?name=${encodeURIComponent(law.name)}`}
-          className="rounded-lg border border-navy-light px-4 py-2 text-sm font-medium text-navy-light transition-colors hover:bg-navy-light hover:text-white"
-        >
-          신구비교
-        </Link>
+        {!unavailable && (
+          <Link
+            href={`/diff?name=${encodeURIComponent(law.name)}`}
+            className="rounded-lg border border-navy-light px-4 py-2 text-sm font-medium text-navy-light transition-colors hover:bg-navy-light hover:text-white"
+          >
+            신구비교
+          </Link>
+        )}
         {/* T42: 매핑 상세로 바로 간다(매핑이 없는 법령은 상세 페이지가 그 사실을 알려 준다) */}
         <Link
           href={`/compare/${encodeURIComponent(law.name)}`}
@@ -232,11 +260,29 @@ export default async function LawPage({
               </div>
             </section>
           )}
+          {unavailable && textStatus && <UnavailableNotice text={textStatus} lawName={law.name} />}
           <Suspense fallback={<div className="py-8 text-center text-gray-400">조문 로딩 중...</div>}>
-            {versionInfo && articles.length === 0 ? (
+            {unavailable ? null : versionInfo && articles.length === 0 ? (
               <VersionFullText text={versionInfo.full_text} />
             ) : (
-              <ArticleView articles={articles} />
+              <>
+                {excerpt && (
+                  <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    최신 판본({excerpt.latest_version})은 일부 조만 있는 <strong>일부본</strong>입니다(원천 자료가 빠짐).
+                    없는 조 {excerpt.missing.length}개는{" "}
+                    <Link href={`/law/${encodeURIComponent(law.name)}?version=${excerpt.fallback_version}`} className="font-semibold underline">
+                      직전 전문 판본({excerpt.fallback_version})
+                    </Link>
+                    에서 볼 수 있습니다. 아래 본문은 최신 판본 그대로입니다.
+                  </p>
+                )}
+                <ArticleView
+                  articles={articles}
+                  gaps={gaps}
+                  gapVersion={excerpt?.fallback_version}
+                  gapLink={excerpt ? `/law/${encodeURIComponent(law.name)}?version=${excerpt.fallback_version}` : undefined}
+                />
+              </>
             )}
           </Suspense>
         </div>

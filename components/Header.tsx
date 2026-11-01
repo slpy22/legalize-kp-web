@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useChatSidebar } from "@/components/ChatSidebarProvider";
 import AuthMenu from "@/components/AuthMenu";
+import HeaderSearch, { SearchIcon } from "@/components/HeaderSearch";
 
 type NavItem =
   | { kind: "link"; href: string; label: string }
@@ -17,9 +18,9 @@ type NavItem =
     };
 
 // T42: 강점(신구비교·남북비교·용어비교)을 메뉴 1단계로 편다. 홈·통계는 그대로 둔다(URL 도 모두 그대로).
+// T50: '법령 찾기'는 메뉴에서 뺐다(/search 는 그대로). 검색은 홈 검색창과 헤더 검색 아이콘으로 한다.
 const NAV: NavItem[] = [
   { kind: "link", href: "/", label: "홈" },
-  { kind: "link", href: "/search", label: "법령 찾기" },
   { kind: "link", href: "/diff", label: "신구비교" },
   { kind: "link", href: "/compare", label: "남북비교" },
   { kind: "link", href: "/compare/terms", label: "용어비교" },
@@ -28,10 +29,6 @@ const NAV: NavItem[] = [
 
 function isActive(href: string, pathname: string): boolean {
   if (href === "/") return pathname === "/";
-  // 법령 찾기: 검색·분야 목록·법령 본문(개정이력 포함)
-  if (href === "/search") {
-    return ["/search", "/category", "/law"].some((p) => pathname.startsWith(p));
-  }
   // /compare 는 하위 /compare/terms 진입 시 비활성
   if (href === "/compare") {
     return pathname.startsWith("/compare") && !pathname.startsWith("/compare/terms");
@@ -42,6 +39,7 @@ function isActive(href: string, pathname: string): boolean {
 export default function Header() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [groupOpen, setGroupOpen] = useState(false);
   const groupRef = useRef<HTMLDivElement>(null);
   const { toggle: toggleChat, isOpen: chatOpen } = useChatSidebar();
@@ -53,6 +51,26 @@ export default function Header() {
     setPrevChatOpen(chatOpen);
     if (chatOpen) setMenuOpen(false);
   }
+  // 화면을 옮기면 검색줄을 닫는다(같은 렌더 중 비교 패턴)
+  const [prevPath, setPrevPath] = useState(pathname);
+  if (pathname !== prevPath) {
+    setPrevPath(pathname);
+    setSearchOpen(false);
+  }
+  const searchButton = (extra: string) => (
+    <button
+      type="button"
+      onClick={() => {
+        setSearchOpen((v) => !v);
+        setMenuOpen(false);
+      }}
+      aria-label="법령 검색"
+      aria-expanded={searchOpen}
+      className={`rounded p-2 transition-colors hover:bg-white/10 ${searchOpen ? "bg-white/20" : ""} ${extra}`}
+    >
+      <SearchIcon />
+    </button>
+  );
 
   // 그룹 드롭다운: 외부 클릭/Esc 로 닫기
   useEffect(() => {
@@ -153,6 +171,7 @@ export default function Header() {
               </div>
             );
           })}
+          {searchButton("ml-1")}
           {/* AI 상담은 페이지가 아니라 사이드바라 테두리 버튼으로 구분한다(T42) */}
           <button
             onClick={toggleChat}
@@ -164,8 +183,17 @@ export default function Header() {
           <AuthMenu variant="desktop" />
         </nav>
 
-        {/* 모바일 햄버거 */}
-        <button className="p-2 lg:hidden" onClick={() => setMenuOpen(!menuOpen)} aria-label="메뉴">
+        {/* 모바일: 검색 아이콘 + 햄버거 */}
+        <div className="flex items-center gap-1 lg:hidden">
+        {searchButton("")}
+        <button
+          className="p-2"
+          onClick={() => {
+            setMenuOpen(!menuOpen);
+            setSearchOpen(false);
+          }}
+          aria-label="메뉴"
+        >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             {menuOpen ? (
               <path d="M6 6l12 12M6 18L18 6" />
@@ -178,7 +206,10 @@ export default function Header() {
             )}
           </svg>
         </button>
+        </div>
       </div>
+
+      {searchOpen && <HeaderSearch onDone={() => setSearchOpen(false)} />}
 
       {/* 모바일 메뉴 드롭다운 */}
       {menuOpen && (

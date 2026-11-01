@@ -12,6 +12,8 @@ import SearchBar from "@/components/SearchBar";
 import Pagination from "@/components/Pagination";
 import Highlight from "@/components/Highlight";
 import ProvenanceBadges from "@/components/ProvenanceBadges";
+import LawYears from "@/components/LawYears";
+import { useLawIndex } from "@/components/LawNameInput";
 
 /** 검색어가 없을 때(T42): 빈 화면 대신 예시 검색어와 분야별 목록(홈에서 옮겨 옴) */
 function Browse() {
@@ -67,6 +69,9 @@ function SearchResults() {
   const page = parseInt(searchParams.get("page") || "1", 10);
 
   const [results, setResults] = useState<SearchResultItem[]>([]);
+  // T50 ⑥: 결과마다 "2008 채택 · 2024 개정" — 검색 응답에는 연도가 없어 법령 색인에서 찾는다
+  const lawIndex = useLawIndex();
+  const yearsOf = (name: string) => lawIndex.find((e) => e.n === name);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -139,8 +144,10 @@ function SearchResults() {
                 >
                   <h3 className="font-semibold text-navy-light group-hover:underline">
                     <Highlight text={r.law_name} query={q} />
+                    {yearsOf(r.law_name)?.t && <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 align-middle text-xs font-normal text-amber-800">본문 미확보</span>}
                   </h3>
                   <div className="mt-1 flex flex-wrap gap-x-4 text-xs text-gray-500">
+                    <LawYears adopted={yearsOf(r.law_name)?.y} latest={yearsOf(r.law_name)?.v} className="font-medium text-gray-600" />
                     <span>{r.category}</span>
                     <span>
                       유사도: {(r.score * 100).toFixed(1)}%

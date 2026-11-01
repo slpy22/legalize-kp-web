@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { adminUsage, type AdminUsage } from "@/lib/account";
+import VisitorStats from "@/components/admin/VisitorStats";
 
 /**
  * 관리자 이용 추이(T43). 백엔드가 NKLAW_ADMIN_EMAILS 계정만 데이터를 준다(그 밖은 401·403).
@@ -82,6 +83,13 @@ export default function AdminPage() {
         </div>
       </div>
       <p className="mt-1 text-xs text-gray-400">집계만 표시합니다(개별 회원 정보 없음). 검색어는 3회 이상 나온 것만 보입니다.</p>
+      {d.ip_status?.missing_recent && (
+        // T67: 원본 IP 가 오지 않으면(예: 포트 게시가 주소를 바꿈) IP 기반 기능이 꺼진 채로 돈다
+        <p role="alert" className="mt-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <strong>실제 IP 미수신</strong> — 최근 1시간 안에 바깥 요청의 실제 IP 를 받지 못했습니다(마지막 {d.ip_status.last_missing_kst}).
+          그동안 IP 기반 요청 제한·챗봇 IP 백스톱·&lsquo;쿠키 없이 집계&rsquo;·접속 국가가 멈춥니다. nginx·포트 게시가 원본 IP 를 넘기는지 확인하세요.
+        </p>
+      )}
 
       <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
@@ -96,6 +104,9 @@ export default function AdminPage() {
           </div>
         ))}
       </dl>
+
+      {/* T52: 방문자 수·접속 국가·봇 */}
+      {d.visitors && <VisitorStats v={d.visitors} days={days} geoip={d.geoip} />}
 
       <h2 className="mt-8 text-lg font-bold text-gray-800">기능별 이용({days}일)</h2>
       <ul className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">

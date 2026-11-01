@@ -12,6 +12,7 @@ import type {
   DiffReportData,
 } from "@/lib/types";
 import SideBySideDiff from "@/components/SideBySideDiff";
+import LawNameInput, { useLawIndex } from "@/components/LawNameInput";
 import { DIFF_QUICK_PICKS, diffHref } from "@/lib/showcase";
 import { track } from "@/lib/track";
 
@@ -23,6 +24,7 @@ function DiffContent() {
   const qDate2 = searchParams.get("date2") || "";
 
   const [name, setName] = useState(initialName);
+  const lawIndex = useLawIndex();   // T54: 본문 미확보 여부
   const [versions, setVersions] = useState<LawVersionMeta[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [date1, setDate1] = useState("");
@@ -156,15 +158,17 @@ function DiffContent() {
         결과에서 AI 변화 리포트도 만들 수 있습니다.
       </p>
 
-      {/* 법령명 입력 */}
+      {/* 법령명 입력 — T50: 자동완성(부분 일치·별칭·초성), 고르면 바로 판본을 불러온다 */}
       <div className="mb-6 flex gap-2">
-        <input
-          type="text"
+        <LawNameInput
           value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="법령명을 입력하세요 (예: 조선민주주의인민공화국 헌법)"
-          className="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 focus:border-navy-light focus:outline-none focus:ring-2 focus:ring-navy-light/30"
-          onKeyDown={(e) => e.key === "Enter" && loadVersions()}
+          onChange={setName}
+          onSelect={(n) => loadVersions(n)}
+          onEnter={() => loadVersions()}
+          label="비교할 법령명"
+          placeholder="법령명 (예: 헌법, 형법, ㅎㅂ)"
+          className="flex-1"
+          inputClassName="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 focus:border-navy-light focus:outline-none focus:ring-2 focus:ring-navy-light/30"
         />
         <button
           onClick={() => loadVersions()}
@@ -249,7 +253,10 @@ function DiffContent() {
 
       {loaded && versions.length < 2 && (
         <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-700">
-          본문이 적재된 버전이 2건 미만이라 비교할 수 없습니다.
+          {/* T54: 본문 미확보 법령은 판본 자체가 없다 */}
+          {lawIndex.find((e) => e.n === name.trim())?.t
+            ? <>본문 미확보 법령이라 비교할 판본이 없습니다. <Link href={`/law/${encodeURIComponent(name.trim())}/history`} className="underline">알려진 개정 이력 보기</Link></>
+            : "본문이 적재된 버전이 2건 미만이라 비교할 수 없습니다."}
         </p>
       )}
 

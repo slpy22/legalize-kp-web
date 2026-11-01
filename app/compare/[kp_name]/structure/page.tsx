@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { fetchCompareStructure, fetchCompareDetail } from "@/lib/api";
+import AutoNotice from "@/components/compare/AutoNotice";
 
 interface ChapterItem {
   chapter: string;
@@ -12,7 +13,7 @@ interface ChapterItem {
 
 interface StructureData {
   kp?: { name?: string; chapters?: ChapterItem[] };
-  kr?: { name?: string; chapters?: ChapterItem[] };
+  kr?: { name?: string; chapters?: ChapterItem[]; found?: boolean; status?: string };  // T57: found·status
   // backward compat
   kp_chapters?: ChapterItem[];
   kr_chapters?: ChapterItem[];
@@ -37,7 +38,7 @@ function StructureContent() {
         let resolvedKr = krNameParam || "";
         if (!resolvedKr) {
           const detail = await fetchCompareDetail(kpName);
-          resolvedKr = detail?.kr_name || "";
+          resolvedKr = detail?.kr_names?.[0] || detail?.kr_name || "";  // T57: N:M 스키마는 kr_names
         }
         setKrName(resolvedKr);
 
@@ -75,11 +76,19 @@ function StructureContent() {
       </nav>
 
       <h1 className="mb-2 text-2xl font-bold text-gray-800">체계 비교</h1>
-      <p className="mb-6 text-sm text-gray-500">
+      <p className="mb-4 text-sm text-gray-500">
         {kpName} {krName ? `↔ ${krName}` : ""}
       </p>
+      <AutoNotice className="mb-6" />
 
       {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
+      {!loading && data?.kr?.found === false && (
+        <p className="mb-6 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+          {data.kr.status === "not_found"
+            ? <><strong>대응 없음</strong> — 「{krName}」과 이름이 같은 현행 남한 법령이 없습니다.</>
+            : "남한 법령을 지금 불러올 수 없습니다."}
+        </p>
+      )}
 
       {loading ? (
         <div className="py-20 text-center text-gray-500">로딩 중...</div>

@@ -5,6 +5,9 @@ import SearchBar from "@/components/SearchBar";
 import AskExamples from "@/components/home/AskExamples";
 import { recentAmendments } from "@/lib/lawStats";
 import { getPopularLaws } from "@/lib/popular";
+import { getLawIndexMap } from "@/lib/lawIndex";
+import { yearOf } from "@/lib/lawSearch";
+import LawYears from "@/components/LawYears";
 import {
   AI_EXAMPLES,
   AUDIENCES,
@@ -45,13 +48,15 @@ export default async function Home() {
     fetchCompareTerms(undefined, undefined, 1, 1),
     fetchLawList(),
   ]);
-  const popular = await getPopularLaws();
+  const [popular, lawIndex] = await Promise.all([getPopularLaws(), getLawIndexMap()]);
   const ref = refR.status === "fulfilled" ? refR.value : null;
   // 주요 최근 개정 — 판본 날짜 기준(목록의 최신 판본일)
   const recent = listR.status === "fulfilled" ? recentAmendments(listR.value.laws, 8) : [];
   const categories = ref ? [...ref.categories].sort((a, b) => b.count - a.count) : [];
   const stats = [
     { label: "북한 법령", value: ref?.total_laws },
+    // T54: 본문 미확보 법령이 있으면 따로 보인다(위 수에 포함)
+    { label: "그중 본문 미확보", value: ref?.total_unavailable || undefined },
     { label: "남북 법령 매핑", value: mapR.status === "fulfilled" ? mapR.value.meta.total : undefined },
     { label: "법용어 대조", value: termR.status === "fulfilled" ? termR.value.meta.total : undefined },
   ].filter((s) => s.value);
@@ -105,10 +110,13 @@ export default async function Home() {
       <section className="bg-gradient-to-b from-navy to-navy-light px-4 pb-10 pt-10 text-white sm:pb-14 sm:pt-14">
         <div className="mx-auto max-w-3xl text-center">
           <p className="mb-3 text-xs font-medium tracking-wide text-white/70 sm:text-sm">통일과 북한법학회 운영 · 북한법률정보센터</p>
-          <h1 className="text-[1.6rem] font-bold leading-snug tracking-tight sm:text-4xl sm:leading-tight">
-            북한 법령을 찾고, <span className="whitespace-nowrap">바뀐 곳을 비교하고,</span>
-            <br className="hidden sm:block" /> 남한법과 견주고, <span className="whitespace-nowrap">AI 에게 물어보세요</span>
+          {/* T50 ③: 히어로 문구 — 후보 3안 중 C(모바일 두 줄). 후보는 _서비스_홈문구자동완성_20261030.md */}
+          <h1 className="text-[1.5rem] font-bold leading-snug tracking-tight sm:text-4xl sm:leading-tight">
+            <span className="whitespace-nowrap">북한 법령을 찾고, 견주고,</span>
+            <br />
+            <span className="whitespace-nowrap">AI 에게 물어보세요</span>
           </h1>
+          <p className="mt-2 text-sm text-white/80 sm:text-base">판본 신구비교 · 남북 법률 비교 · 법용어 대조 · AI 상담</p>
           {stats.length > 0 && (
             <dl className="mt-5 flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm text-white/80">
               {stats.map((s) => (
@@ -144,11 +152,14 @@ export default async function Home() {
         <div className="grid gap-5 lg:grid-cols-2">
           {/* ① 신구비교 */}
           <article id="diff" className="scroll-mt-20 flex flex-col rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
-            <p className="text-xs font-semibold text-navy-light">① 신구비교 · 판본 의미 비교 · AI 변화 리포트</p>
-            <h3 className="mt-1 text-lg font-bold text-gray-900">
-              {d.shortName} {d.date1.replaceAll("-", ".")} → {d.date2.replaceAll("-", ".")}
-            </h3>
-            <p className="mt-1 text-sm text-gray-500">조문 번호가 밀려도 내용으로 짝지어, 무엇이 새로 생기고 사라지고 바뀌었는지 찾습니다.</p>
+<header>
+              <div className="flex items-center gap-2.5">
+                <span aria-hidden className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-navy text-sm font-bold text-white">1</span>
+                <h3 className="text-2xl font-extrabold tracking-tight text-navy">신구비교</h3>
+              </div>
+              <p className="mt-1.5 text-base text-gray-600">바뀐 조문을 의미로 짝지어 찾습니다</p>
+            </header>
+            <p className="mt-3 text-sm font-semibold text-gray-800">예: {d.shortName} {d.date1.replaceAll("-", ".")} → {d.date2.replaceAll("-", ".")}</p>
             <div className="mt-3 flex flex-wrap gap-2 text-sm">
               <span className="rounded-md bg-amber-100 px-2 py-0.5 text-amber-800">변경 {d.summary.modified}</span>
               <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-emerald-800">신설 {d.summary.added}</span>
@@ -188,11 +199,13 @@ export default async function Home() {
 
           {/* ② AI 상담 */}
           <article id="ai" className="scroll-mt-20 flex flex-col rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
-            <p className="text-xs font-semibold text-navy-light">② AI 상담 · 북한법 전문 에이전트</p>
-            <h3 className="mt-1 text-lg font-bold text-gray-900">말로 묻고, 근거 조문과 함께 답 받기</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              법령 검색·판본 비교·남북 비교 도구를 직접 써서 답하고, 답 속 조문은 눌러서 원문으로 갑니다.
-            </p>
+<header>
+              <div className="flex items-center gap-2.5">
+                <span aria-hidden className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-navy text-sm font-bold text-white">2</span>
+                <h3 className="text-2xl font-extrabold tracking-tight text-navy">AI 상담</h3>
+              </div>
+              <p className="mt-1.5 text-base text-gray-600">말로 묻고, 근거 조문과 함께 답 받기</p>
+            </header>
             <div className="mt-4">
               <AskExamples questions={AI_EXAMPLES} />
             </div>
@@ -201,11 +214,17 @@ export default async function Home() {
 
           {/* ③ 남북 법률 비교 */}
           <article id="compare" className="scroll-mt-20 flex flex-col rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
-            <p className="text-xs font-semibold text-navy-light">③ 남북 법률 비교 · 법령 매핑 · 조문 대응 · 체계 비교</p>
-            <h3 className="mt-1 text-lg font-bold text-gray-900">
-              북한 {c.kpName} ↔ 남한 {c.krName}
+<header>
+              <div className="flex items-center gap-2.5">
+                <span aria-hidden className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-navy text-sm font-bold text-white">3</span>
+                <h3 className="text-2xl font-extrabold tracking-tight text-navy">남북 법률 비교</h3>
+              </div>
+              <p className="mt-1.5 text-base text-gray-600">북한법과 남한법을 짝지어 견줍니다</p>
+            </header>
+            <p className="mt-3 text-sm font-semibold text-gray-800">
+              예: 북한 {c.kpName} ↔ 남한 {c.krName}
               <span className="ml-2 rounded-full bg-yellow-100 px-2 py-0.5 align-middle text-xs font-semibold text-yellow-700">{c.relationship}</span>
-            </h3>
+            </p>
             <dl className="mt-3 space-y-2.5 text-sm">
               <div>
                 <dt className="text-xs font-semibold text-gray-500">겹치는 영역</dt>
@@ -238,9 +257,13 @@ export default async function Home() {
 
           {/* ④ 법용어 비교 */}
           <article id="terms" className="scroll-mt-20 flex flex-col rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
-            <p className="text-xs font-semibold text-navy-light">④ 법용어 비교 · 남북 용어 대조표</p>
-            <h3 className="mt-1 text-lg font-bold text-gray-900">같은 제도, 다른 말</h3>
-            <p className="mt-1 text-sm text-gray-500">북한 법률 용어를 남한 용어와 짝지었습니다. 눌러서 관련 용어를 찾아보세요.</p>
+<header>
+              <div className="flex items-center gap-2.5">
+                <span aria-hidden className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-navy text-sm font-bold text-white">4</span>
+                <h3 className="text-2xl font-extrabold tracking-tight text-navy">법용어 비교</h3>
+              </div>
+              <p className="mt-1.5 text-base text-gray-600">같은 제도, 다른 말을 짝지었습니다</p>
+            </header>
             <ul className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
               {TERM_SHOWCASE.map((t) => (
                 <li key={t.kp}>
@@ -278,7 +301,10 @@ export default async function Home() {
               <li key={l.name} className="border-b border-gray-100 last:border-0">
                 <Link href={`/law/${encodeURIComponent(l.name)}`} className="flex items-center gap-3 py-2 text-sm hover:text-navy-light">
                   <span className="w-5 shrink-0 text-right font-semibold text-navy-light">{i + 1}</span>
-                  <span className="min-w-0 flex-1 truncate font-medium text-gray-800">{l.name}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium text-gray-800">{l.name}</span>
+                    <LawYears adopted={lawIndex.get(l.name)?.y} latest={lawIndex.get(l.name)?.v} className="text-xs text-gray-500" />
+                  </span>
                   {l.note && <span className="shrink-0 text-xs text-gray-400">{l.note}</span>}
                 </Link>
               </li>
@@ -298,7 +324,10 @@ export default async function Home() {
                 <li key={l.id} className="border-b border-gray-100 last:border-0">
                   <Link href={`/law/${encodeURIComponent(l.name)}`} className="flex items-center gap-3 py-2 text-sm hover:text-navy-light">
                     <time className="w-24 shrink-0 tabular-nums text-gray-500">{l.latest_version_date}</time>
-                    <span className="min-w-0 flex-1 truncate font-medium text-gray-800">{l.name}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium text-gray-800">{l.name}</span>
+                      <LawYears adopted={yearOf(l.enactment_date)} latest={yearOf(l.latest_version_date)} className="text-xs text-gray-500" />
+                    </span>
                     <span className="shrink-0 text-xs text-gray-400">개정 {l.amendment_count}회</span>
                   </Link>
                 </li>

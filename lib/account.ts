@@ -5,7 +5,7 @@
 const API = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 /** 약관·처리방침 문서 버전 — 백엔드 app/usage/settings.py DOC_VERSION 과 같아야 한다 */
-export const DOC_VERSION = "2026-10-30";
+export const DOC_VERSION = "2026-10-30.2"; // T47: 약관 6조(데이터 권리) 보강 — 회원 재동의
 
 export interface AuthConfig {
   login: boolean;
@@ -40,6 +40,19 @@ export interface AdminUsage {
   top_laws: { name: string; count: number }[];
   top_queries: { query: string; count: number }[];
   users: { total: number; new: number; active: number; usage_opt_in: number };
+  visitors?: AdminVisitors;   // T52
+  geoip?: { available: boolean; attribution: string; attribution_url: string };
+  // T67: 바깥 요청의 실제(공인) IP 를 못 받고 있는지 — 그동안 IP 기반 제한·국가·쿠키 없이 집계가 멈춘다
+  ip_status?: { missing_recent: boolean; last_missing_kst: string | null; last_public_kst: string | null };
+}
+
+/** T52 방문자 수·국가·봇(/api/v1/admin/usage 의 visitors) */
+export interface AdminVisitors {
+  daily: { day: string; total: number; member: number; guest: number; cookieless: number; new: number; returning: number }[];
+  weekly: { start: string; cookie_unique: number; member_unique: number; cookieless_daysum: number }[];
+  monthly: { start: string; cookie_unique: number; member_unique: number; cookieless_daysum: number }[];
+  countries: { country: string; visitors: number; views: number }[];
+  bots: { kind: "search_bot" | "suspect"; name: string; hits: number }[];
 }
 
 async function call<T>(path: string, init?: RequestInit): Promise<{ status: number; data: T }> {

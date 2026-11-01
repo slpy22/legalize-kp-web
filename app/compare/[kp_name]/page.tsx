@@ -5,6 +5,7 @@ import { track } from "@/lib/track";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { fetchCompareDetail } from "@/lib/api";
+import AutoNotice, { lawGoKrUrl } from "@/components/compare/AutoNotice";
 
 interface ArticleMapping {
   kp?: string;        // API: "제1조(사명)"
@@ -38,6 +39,8 @@ interface DetailData {
   } | null;
   kr_info: {
     name: string;
+    found?: boolean;          // T57: 이름이 정확히 같은 현행 법령을 찾았는지
+    status?: string;          // found | not_found | unavailable
     enactment_date?: string | null;
     latest_version_date?: string | null;
     total_articles?: number | null;
@@ -148,8 +151,9 @@ function CompareDetailContent() {
         </span>
       </div>
       {data?.kp_category && (
-        <p className="mb-6 text-sm text-gray-500">카테고리: {data.kp_category}</p>
+        <p className="mb-3 text-sm text-gray-500">카테고리: {data.kp_category}</p>
       )}
+      <AutoNotice className="mb-6" />
 
       {/* 좌우 카드: 북한법 (좌) + 남한법 카드들 (우) */}
       <div className="mb-8 grid gap-6 lg:grid-cols-2">
@@ -184,10 +188,16 @@ function CompareDetailContent() {
             krNames.map((name, idx) => (
               <div key={idx} className="rounded-lg border-2 border-accent bg-white p-6 shadow-sm">
                 <h2 className="mb-4 text-lg font-bold text-red-700">
-                  남한: {name}
+                  남한: <a href={lawGoKrUrl(name)} target="_blank" rel="noopener noreferrer" className="hover:underline" title="국가법령정보센터에서 보기">{name}</a>
                 </h2>
                 {/* 첫 번째 남한법에만 kr_info 표시 (추후 개별 정보 확장 가능) */}
-                {idx === 0 && kr ? (
+                {idx === 0 && kr && kr.found === false ? (
+                  <p className="text-sm text-gray-600">
+                    {kr.status === "not_found"
+                      ? "같은 이름의 현행 남한 법령이 없습니다(폐지·개명됐거나 법령명이 다를 수 있음)."
+                      : "남한법 정보를 지금 불러올 수 없습니다."}
+                  </p>
+                ) : idx === 0 && kr ? (
                   <dl className="space-y-2 text-sm">
                     {kr.enactment_date && (
                       <div><dt className="text-gray-500">제정일</dt><dd className="font-medium">{kr.enactment_date}</dd></div>

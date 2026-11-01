@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useChatSidebar } from "@/components/ChatSidebarProvider";
@@ -17,6 +17,16 @@ const FALLBACK_EXAMPLES = [
 ];
 
 interface Source { law_name?: string; article?: string; }
+
+/** /api/v1/chat/quota(T51) — 회원 여부, 비회원 남은 횟수, ClewPath 서비스 한도 도달 여부 */
+interface ChatQuota {
+  enabled: boolean;
+  member: boolean;
+  free_per_day: number | null;
+  remaining: number | null;
+  login_url: string | null;
+  service: { exhausted: boolean; message: string | null };
+}
 interface Msg {
   role: "user" | "assistant";
   text: string;
@@ -74,6 +84,7 @@ function linkifyRefs(text: string, sources: Source[]): string {
 
 export default function ChatWidget() {
   const router = useRouter();
+  const pathname = usePathname();
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [displayText, setDisplayText] = useState("");
   const [input, setInput] = useState("");
@@ -83,6 +94,26 @@ export default function ChatWidget() {
   const [toolStatus, setToolStatus] = useState("");
   const [examples, setExamples] = useState<string[]>([]);
   const [examplesLoaded, setExamplesLoaded] = useState(false);
+  // T51 이용 한도 — 서버가 강제하고, 화면은 남은 횟수·로그인 안내·서비스 한도 안내를 보인다
+  const [quota, setQuota] = useState<ChatQuota | null>(null);
+  const [quotaLoaded, setQuotaLoaded] = useState(false);   // 홈 예시 질문은 한도 상태를 받은 뒤에 보낸다
+  const limited = !!quota?.enabled && !quota.member && quota.remaining === 0;
+  const serviceFull = !!quota?.service.exhausted;
+  const loginHref = `${quota?.login_url || "/login"}?next=${encodeURIComponent(pathname || "/")}`;
+
+  function refreshQuota() {
+    fetch(`${API_BASE}/api/v1/chat/quota`, { credentials: "same-origin" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((q: ChatQuota | null) => {
+        if (!q) return;
+        setQuota(q);
+        // ClewPath 서비스 한도에 닿으면 자체 에이전트는 쓸 수 없으므로 Gemini 로 돌린다(선택지도 막음)
+        if (q.service.exhausted) setLlm((v) => (v === "self" ? "gemini" : v));
+      })
+      .catch(() => {})
+      .finally(() => setQuotaLoaded(true));
+  }
+  useEffect(refreshQuota, []);
 
   const textRef = useRef("");
   const rafId = useRef(0);
@@ -101,11 +132,12 @@ export default function ChatWidget() {
   // 홈 등의 예시 질문(T42): 사이드바가 질문과 함께 열리면 바로 보낸다
   const { pendingQuestion, takePendingQuestion } = useChatSidebar();
   useEffect(() => {
-    if (!pendingQuestion || busy) return;
+    if (!pendingQuestion || busy || !quotaLoaded) return;
     const q = takePendingQuestion();
-    if (q) send(q);
+    // T51: 홈 예시 질문도 같은 한도 — 비회원이 다 썼으면 보내지 않고 로그인 안내가 보인다(서버도 막는다)
+    if (q && !limited) send(q);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingQuestion, busy]);
+  }, [pendingQuestion, busy, quotaLoaded]);
 
   // 스크롤 하단 유지
   useEffect(() => {
@@ -122,7 +154,7 @@ export default function ChatWidget() {
   }
 
   async function send(text: string) {
-    if (!text.trim() || busy) return;
+    if (!text.trim() || busy || limited) return;
     track("chat"); // T43: 사용 여부만 — 질문 내용은 보내지 않는다
     setBusy(true);
     setInput("");
@@ -135,6 +167,9 @@ export default function ChatWidget() {
     setMsgs((p) => [...p, { role: "user", text, sources: [], status: "" }]);
 
     let allSources: Source[] = [];
+    // T52 보완: 비회원 턴 id(응답 머리) — 답 토큰 없이 끝나면 이 id 로 1회 되돌리기를 청한다(서버가 실패 여부를 확인)
+    let turn: string | null = null;
+    let answered = false;
 
     try {
       const res = await fetch(`${API_BASE}/api/v1/chat`, {
@@ -143,6 +178,7 @@ export default function ChatWidget() {
         body: JSON.stringify({ message: text, session_id: sid, llm }),
       });
       if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+      turn = res.headers.get("X-Chat-Turn");
 
       const reader = res.body.getReader();
       const dec = new TextDecoder();
@@ -170,6 +206,7 @@ export default function ChatWidget() {
           if (etype === "session" && d.session_id) {
             setSid(d.session_id);
           } else if (etype === "token") {
+            if (d.text) answered = true;
             textRef.current += d.text || "";
             setToolStatus("");
             scheduleTextUpdate();
@@ -203,12 +240,28 @@ export default function ChatWidget() {
           } else if (etype === "error") {
             textRef.current = `⚠️ ${d.message || "오류가 발생했습니다."}`;
             scheduleTextUpdate();
+            // T51: 비회원 하루 한도 → 남은 횟수 0 으로(입력을 막고 로그인 안내), 서비스 한도 → Gemini 로
+            if (d.code === "free_quota") setQuota((q) => (q ? { ...q, remaining: 0 } : q));
+            if (d.code === "service_exhausted") refreshQuota();
           }
         }
       }
     } catch {
       if (!textRef.current) textRef.current = "⚠️ 서버 연결에 실패했습니다.";
     } finally {
+      // T52 보완: 답 없이 끝난 비회원 질문은 횟수를 되돌려 받는다(하루 1번까지 — 서버가 판단)
+      if (turn && !answered) {
+        try {
+          const rf = await fetch(`${API_BASE}/api/v1/chat/refund`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ turn }),
+          });
+          if (rf.ok) textRef.current += "\n\n(답을 드리지 못해 이번 질문은 횟수에서 빼 드렸습니다.)";
+        } catch {
+          /* 되돌리기 실패는 조용히 넘어간다 */
+        }
+      }
       // 어떤 경우든 반드시 실행 — busy 해제 + 최종 메시지 저장
       cancelAnimationFrame(rafId.current);
       rafId.current = 0;
@@ -220,6 +273,7 @@ export default function ChatWidget() {
       setToolStatus("");
       textRef.current = "";
       setBusy(false);
+      refreshQuota();
       setTimeout(() => inputRef.current?.focus(), 0);
     }
   }
@@ -265,7 +319,7 @@ export default function ChatWidget() {
           <span style={{ fontSize: 13, color: "#666" }}>모델:</span>
           <select value={llm} onChange={(e) => setLlm(e.target.value)} disabled={busy}
             style={{ border: "1px solid #d1d5db", borderRadius: 4, padding: "3px 8px", fontSize: 13 }}>
-            <option value="self">자체 에이전트</option>
+            <option value="self" disabled={serviceFull}>자체 에이전트{serviceFull ? "(오늘 한도 도달)" : ""}</option>
             <option value="gemini">Gemini</option>
           </select>
         </div>
@@ -275,6 +329,13 @@ export default function ChatWidget() {
           초기화
         </button>
       </div>
+
+      {/* T51: ClewPath 서비스 일일 한도 — 모두에게 안내 */}
+      {serviceFull && quota?.service.message && (
+        <p role="status" style={{ flexShrink: 0, margin: 0, padding: "8px 16px", background: "#fffbeb", borderBottom: "1px solid #fde68a", color: "#92400e", fontSize: 13 }}>
+          {quota.service.message}
+        </p>
+      )}
 
       {/* 메시지 영역 */}
       <div ref={scrollRef} style={{ flex: "1 1 0", overflowY: "auto", padding: 16, minHeight: 0 }}>
@@ -288,8 +349,8 @@ export default function ChatWidget() {
               <p style={{ fontSize: 14, color: "#9ca3af", marginBottom: 32 }}>북한 법령에 대해 궁금한 것을 질문해 보세요.</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 400, margin: "0 auto", minHeight: 140 }}>
                 {examplesLoaded ? examples.map((q) => (
-                  <button key={q} onClick={() => send(q)}
-                    style={{ textAlign: "left", padding: "12px 16px", border: "1px solid #e5e7eb", borderRadius: 8, background: "#fff", fontSize: 14, cursor: "pointer" }}>
+                  <button key={q} onClick={() => send(q)} disabled={limited}
+                    style={{ textAlign: "left", padding: "12px 16px", border: "1px solid #e5e7eb", borderRadius: 8, background: "#fff", fontSize: 14, cursor: limited ? "default" : "pointer", opacity: limited ? 0.5 : 1 }}>
                     {q}
                   </button>
                 )) : null}
@@ -371,6 +432,17 @@ export default function ChatWidget() {
 
       {/* 입력 영역 */}
       <div style={{ flexShrink: 0, borderTop: "1px solid #e5e7eb", background: "#fff", padding: "12px 16px" }}>
+        {/* T51: 비회원이 하루 한도를 다 쓰면 로그인 안내 + 버튼, 입력은 막는다 */}
+        {limited && (
+          <div role="status" style={{ maxWidth: 720, margin: "0 auto 10px", padding: "12px 14px", borderRadius: 8, background: "#eff6ff", border: "1px solid #bfdbfe", fontSize: 14, color: "#1e3a8a", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
+            <span style={{ flex: "1 1 220px" }}>
+              비회원은 하루 {quota?.free_per_day ?? 1}번 질문할 수 있습니다. 로그인하면 횟수 제한 없이 이용할 수 있습니다.
+            </span>
+            <a href={loginHref} style={{ padding: "8px 16px", borderRadius: 8, background: "#1a365d", color: "#fff", fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}>
+              로그인
+            </a>
+          </div>
+        )}
         <form onSubmit={(e) => { e.preventDefault(); send(input); }}
           style={{ maxWidth: 720, margin: "0 auto", display: "flex", gap: 8, alignItems: "flex-end" }}>
           <textarea
@@ -392,8 +464,8 @@ export default function ChatWidget() {
             }}
             // T41: 예전 문구는 "(Shift+Enter: 줄바꿈)" 까지 붙어 모든 폭에서 두 줄이 되어 둘째 줄이 잘렸다.
             // 한 줄 문구로 줄이고, 줄바꿈 안내는 아래 .chat-hint(마우스 기기에서만)로 옮겼다.
-            placeholder="북한 법령에 대해 질문하세요"
-            disabled={busy}
+            placeholder={limited ? "로그인하면 이어서 질문할 수 있습니다" : "북한 법령에 대해 질문하세요"}
+            disabled={busy || limited}
             autoFocus
             rows={1}
             className="chat-input"
@@ -403,13 +475,20 @@ export default function ChatWidget() {
               lineHeight: 1.5, minHeight: 42, maxHeight: 200,
             }}
           />
-          <button type="submit" disabled={busy || !input.trim()}
+          <button type="submit" disabled={busy || limited || !input.trim()}
             style={{ padding: "10px 20px", borderRadius: 8, background: busy ? "#9ca3af" : "#1a365d", color: "#fff", border: "none", fontSize: 14, cursor: busy ? "default" : "pointer", flexShrink: 0, height: 42 }}>
             {busy ? "..." : "전송"}
           </button>
         </form>
         {/* Shift+Enter 안내(T41). 화면 키보드에는 Shift+Enter 가 없어 마우스·키보드 기기에서만 보인다 */}
         <p className="chat-hint">Enter 전송 · Shift+Enter 줄바꿈</p>
+        {/* T51: 비회원 남은 횟수 */}
+        {quota?.enabled && !quota.member && !limited && quota.remaining != null && (
+          <p style={{ maxWidth: 720, margin: "6px auto 0", fontSize: 12, color: "#6b7280" }}>
+            비회원 오늘 남은 질문 {quota.remaining}회 ·{" "}
+            <a href={loginHref} style={{ color: "#1d4ed8", textDecoration: "underline" }}>로그인하면 횟수 제한 없음</a>
+          </p>
+        )}
       </div>
 
       <style>{`
