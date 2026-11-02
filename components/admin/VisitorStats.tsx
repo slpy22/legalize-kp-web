@@ -153,15 +153,16 @@ export default function VisitorStats({ v, days, geoip }: {
           <h2 className="text-lg font-bold text-gray-800">접속 국가({days}일)</h2>
           <table className="mt-3 w-full overflow-hidden rounded-xl border border-gray-200 bg-white text-sm">
             <thead className="bg-gray-50 text-xs text-gray-500">
-              <tr><th className="px-4 py-2 text-left">국가</th><th className="px-4 py-2 text-right">방문자(일별 합)</th><th className="px-4 py-2 text-right">페이지·법령 조회</th></tr>
+              <tr><th className="px-4 py-2 text-left">국가</th><th className="px-4 py-2 text-right">방문자(일별 합)</th><th className="whitespace-nowrap px-4 py-2 text-right">열람 페이지</th><th className="whitespace-nowrap px-4 py-2 text-right">법령 조회</th></tr>
             </thead>
             <tbody>
-              {v.countries.length === 0 && <tr><td colSpan={3} className="px-4 py-3 text-gray-400">아직 기록이 없습니다.</td></tr>}
+              {v.countries.length === 0 && <tr><td colSpan={4} className="px-4 py-3 text-gray-400">아직 기록이 없습니다.</td></tr>}
               {v.countries.map((c) => (
                 <tr key={c.country} className="border-t border-gray-100">
                   <td className="px-4 py-2">{countryName(c.country)} <span className="text-xs text-gray-400">{c.country !== "??" ? c.country : ""}</span></td>
                   <td className="px-4 py-2 text-right tabular-nums">{c.visitors.toLocaleString()}</td>
-                  <td className="px-4 py-2 text-right tabular-nums">{c.views.toLocaleString()}</td>
+                  <td className="px-4 py-2 text-right tabular-nums">{c.pages.toLocaleString()}</td>
+                  <td className="px-4 py-2 text-right tabular-nums">{c.law_views.toLocaleString()}</td>
                 </tr>
               ))}
             </tbody>

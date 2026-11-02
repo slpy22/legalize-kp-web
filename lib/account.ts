@@ -72,7 +72,8 @@ export interface AdminVisitors {
   daily: { day: string; total: number; member: number; guest: number; cookieless: number; new: number; returning: number }[];
   weekly: { start: string; cookie_unique: number; member_unique: number; cookieless_daysum: number }[];
   monthly: { start: string; cookie_unique: number; member_unique: number; cookieless_daysum: number }[];
-  countries: { country: string; visitors: number; views: number }[];
+  // T91: 열람은 페이지(kind=page)와 법령 조회(law_view)를 따로
+  countries: ({ country: string; visitors: number } & ViewCounts)[];
   // T85: renderer = 검색엔진 렌더러(사람 UA 로 화면 JS 를 실행한 수집기 — 역DNS+정방향 확인)
   bots: { kind: "search_bot" | "suspect" | "renderer"; name: string; hits: number }[];
   // T85: 분류 사유별 일일 건수 — kind: search_bot·suspect·renderer(방문자 수에서 뺌) | suspicious(사람으로 셈, 사유만) | internal
@@ -81,9 +82,21 @@ export interface AdminVisitors {
   // T90: device = 운영자 기기 쿠키, test = 점검 헤더
   internal?: InternalCounts & { days: ({ day: string } & InternalCounts)[] };
   // T83: 접속 지역(한국 시·도)·접속 기관(분류·표시 이름은 서버가 붙임)
-  regions?: { region: string; visitors: number; views: number }[];
-  orgs?: { org: string; kind: string; country: string | null; visitors: number; views: number }[];
-  devices?: { device: "mobile" | "tablet" | "pc" | "unknown" | "none"; visitors: number; views: number }[];   // T88 — none = 기록 전
+  regions?: ({ region: string; visitors: number } & ViewCounts)[];
+  orgs?: ({ org: string; kind: string; country: string | null; visitors: number } & ViewCounts)[];
+  devices?: ({ device: "mobile" | "tablet" | "pc" | "unknown" | "none"; visitors: number } & ViewCounts)[];   // T88 — none = 기록 전
+  sources?: AdminSources;   // T91: 유입 경로
+}
+
+/** T91: 열람 페이지(kind=page)·법령 조회(law_view) 건수 */
+export interface ViewCounts { pages: number; law_views: number }
+
+/** T91: 유입 경로 — 방문(탭) 첫 페이지의 출처 분류별 방문 수와 출처 호스트 상위 */
+export type SourceKind = "ai" | "search" | "social" | "other" | "direct";
+export interface AdminSources {
+  ready: boolean;
+  by: { src: SourceKind; label: string; visits: number }[];
+  hosts: { src: SourceKind; host: string; visits: number }[];
 }
 
 export interface InternalCounts { lan: number; admin: number; device?: number; test?: number }
@@ -113,15 +126,16 @@ export const adminUsage = (days: number) => call<AdminUsage & { ok?: boolean; er
 
 /** T89: 방문(탭) 단위 열람 순서 */
 export interface AdminVisitRow {
-  visit: string; start: string; last: string; span_sec: number; pages: number; events: number; dwell_sec: number;
+  visit: string; start: string; last: string; span_sec: number; pages: number; law_views?: number; events: number; dwell_sec: number;
   region: string; org: string; org_kind: string; device: string;
+  src?: SourceKind | "none"; src_host?: string | null;   // T91: 유입 경로(none = 기록 없음)
 }
 export interface AdminVisits {
   ok?: boolean; error?: string; day: string; ready: boolean; total: number; visits: AdminVisitRow[];
-  facets: Record<"region" | "org" | "device", { name: string; visits: number }[]>;
+  facets: Partial<Record<"region" | "org" | "device" | "src", { name: string; visits: number }[]>>;
 }
 export interface AdminVisitEvent { ts: string; kind: string; path: string | null; law: string | null; seq: number | null; dwell_sec: number | null }
-export const adminVisits = (day: string, f: { region?: string; org?: string; device?: string } = {}) => {
+export const adminVisits = (day: string, f: { region?: string; org?: string; device?: string; src?: string } = {}) => {
   const p = new URLSearchParams({ day });
   for (const [k, v] of Object.entries(f)) if (v) p.set(k, v);
   return call<AdminVisits>(`/admin/usage/visits?${p.toString()}`);

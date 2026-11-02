@@ -6,6 +6,8 @@
  * 보낸다(서버가 쿠키 없이 그날 해시로만 센다, 처리방침 10조). 실패해도 화면에 영향이 없다.
  * T89: 한 번의 방문 안의 열람 순서·페이지별 머문 시간 — 이 탭의 sessionStorage 에만 두는 무작위 임시 방문 ID(탭을 닫으면 사라짐)로
  * 기록을 묶는다. 방문자 쿠키·회원·IP 와 잇지 않는다. GPC 를 켰거나 쿠키를 막은 브라우저는 만들지 않는다.
+ * T91: 유입 경로 — 방문(탭)의 첫 페이지 기록에만 직전 사이트의 호스트 이름(전체 주소가 아님)과 주소의 utm_source 값을 붙인다.
+ * 서버가 바로 분류해 분류와 호스트 이름만 남긴다. 같은 사이트 안에서 온 것은 보내지 않는다. GPC 면 아무것도 보내지 않는다.
  * 'kind' 는 백엔드 app/usage/repo.py KINDS 와 같다.
  */
 export type TrackKind = "page" | "law_view" | "search" | "diff" | "compare" | "terms" | "chat";
@@ -50,13 +52,36 @@ export function nextSeq(): number | null {
   }
 }
 
+/**
+ * T91: 방문 첫 페이지의 출처 — { ref: 직전 사이트 호스트 이름(없으면 ""), utm?: utm_source }. 같은 사이트에서 왔으면 {}.
+ * 전체 주소·경로·검색어·그 밖의 query 는 꺼내지 않는다.
+ */
+export function entrySource(): { ref?: string; utm?: string } {
+  if (typeof window === "undefined") return {};
+  try {
+    let ref = "";
+    if (document.referrer) {
+      const h = new URL(document.referrer).hostname.toLowerCase();
+      if (h && h === window.location.hostname.toLowerCase()) return {};   // 사이트 안 이동(새 탭 열기 등)은 기록하지 않는다
+      ref = h.slice(0, 253);
+    }
+    const utm = (new URLSearchParams(window.location.search).get("utm_source") ?? "").trim().slice(0, 100);
+    return { ref, ...(utm ? { utm } : {}) };
+  } catch {
+    return {};
+  }
+}
+
 function beacon(url: string, body: string): void {
   // sendBeacon 은 페이지를 떠나는 중에도 보내진다. text/plain 이라 미리보기(preflight) 요청이 없다
   if (navigator.sendBeacon && navigator.sendBeacon(url, new Blob([body], { type: "text/plain" }))) return;
   void fetch(url, { method: "POST", body, keepalive: true, credentials: "same-origin" }).catch(() => {});
 }
 
-export function track(kind: TrackKind, data: { law?: string; path?: string; query?: string; seq?: number } = {}): void {
+export function track(
+  kind: TrackKind,
+  data: { law?: string; path?: string; query?: string; seq?: number; ref?: string; utm?: string } = {},
+): void {
   if (typeof window === "undefined") return;
   try {
     if (gpc()) {
@@ -64,8 +89,10 @@ export function track(kind: TrackKind, data: { law?: string; path?: string; quer
       return;
     }
     const visit = tabVisit();
-    const { seq, ...rest } = data;
-    const body = JSON.stringify({ kind, ...rest, ...(visit ? { visit, ...(seq ? { seq } : {}) } : {}) });
+    const { seq, ref, utm, ...rest } = data;
+    // T91: 출처는 이 탭의 첫 페이지(seq 1) 기록에만
+    const src = visit && seq === 1 && kind === "page" && ref !== undefined ? { ref, ...(utm ? { utm } : {}) } : {};
+    const body = JSON.stringify({ kind, ...rest, ...(visit ? { visit, ...(seq ? { seq } : {}), ...src } : {}) });
     const url = `${API}/api/v1/usage/event`;
     // 페이지 기록은 응답의 방문자 쿠키를 받아야 하므로 fetch(같은 출처, 쿠키 포함)로 보낸다
     if (kind === "page") {

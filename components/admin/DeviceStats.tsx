@@ -2,7 +2,7 @@ import type { AdminVisitors } from "@/lib/account";
 
 /**
  * T88: 접속 단말 종류 — 관리자 이용현황. 요청의 브라우저 정보에서 바로 판정한 종류 이름만 저장한다(브라우저 정보 원문은 저장하지 않음).
- * 방문자는 그날 첫 요청의 단말(일별 합), 조회는 페이지·법령 조회 건수. 단말 기록을 시작하기 전 기록은 '기록 전'.
+ * 방문자는 그날 첫 요청의 단말(일별 합). T91: 열람 페이지(화면)와 법령 조회를 따로 센다. 단말 기록을 시작하기 전 기록은 '기록 전'.
  */
 const LABEL: Record<string, string> = {
   mobile: "모바일(휴대전화)", tablet: "태블릿", pc: "PC(데스크톱·노트북)", unknown: "알 수 없음", none: "기록 전",
@@ -21,11 +21,12 @@ export default function DeviceStats({ v, days }: { v: AdminVisitors; days: numbe
             <th className="px-4 py-2 text-left">단말</th>
             <th className="whitespace-nowrap px-4 py-2 text-right">방문자(일별 합)</th>
             <th className="whitespace-nowrap px-4 py-2 text-right">비율</th>
-            <th className="whitespace-nowrap px-4 py-2 text-right">페이지·법령 조회</th>
+            <th className="whitespace-nowrap px-4 py-2 text-right">열람 페이지</th>
+            <th className="whitespace-nowrap px-4 py-2 text-right">법령 조회</th>
           </tr>
         </thead>
         <tbody>
-          {rows.length === 0 && <tr><td colSpan={4} className="px-4 py-3 text-gray-400">아직 기록이 없습니다.</td></tr>}
+          {rows.length === 0 && <tr><td colSpan={5} className="px-4 py-3 text-gray-400">아직 기록이 없습니다.</td></tr>}
           {rows.map((r) => (
             <tr key={r.device} className={`border-t border-gray-100 ${r.device === "none" ? "text-gray-400" : ""}`}>
               <td className="px-4 py-2">{LABEL[r.device] ?? r.device}</td>
@@ -33,7 +34,8 @@ export default function DeviceStats({ v, days }: { v: AdminVisitors; days: numbe
               <td className="px-4 py-2 text-right tabular-nums">
                 {r.device === "none" || total === 0 ? "—" : `${Math.round((r.visitors / total) * 100)}%`}
               </td>
-              <td className="px-4 py-2 text-right tabular-nums">{r.views.toLocaleString()}</td>
+              <td className="px-4 py-2 text-right tabular-nums">{r.pages.toLocaleString()}</td>
+              <td className="px-4 py-2 text-right tabular-nums">{r.law_views.toLocaleString()}</td>
             </tr>
           ))}
         </tbody>

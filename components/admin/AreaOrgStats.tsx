@@ -30,9 +30,10 @@ export default function AreaOrgStats({ v, days, geoip }: {
     if (isp.length === 0) return rest;
     const sum = {
       org: `통신사 회선 합계(${isp.map((o) => o.org).join("·")})`, kind: "isp", country: "KR",
-      visitors: isp.reduce((n, o) => n + o.visitors, 0), views: isp.reduce((n, o) => n + o.views, 0),
+      visitors: isp.reduce((n, o) => n + o.visitors, 0), pages: isp.reduce((n, o) => n + o.pages, 0),
+      law_views: isp.reduce((n, o) => n + o.law_views, 0),
     };
-    return [sum, ...rest].sort((a, b) => b.visitors - a.visitors || b.views - a.views);
+    return [sum, ...rest].sort((a, b) => b.visitors - a.visitors || b.pages - a.pages || b.law_views - a.law_views);
   }, [v.orgs, groupIsp]);
 
   const empty = (cols: number) => <tr><td colSpan={cols} className="px-4 py-3 text-gray-400">아직 기록이 없습니다.</td></tr>;
@@ -44,15 +45,16 @@ export default function AreaOrgStats({ v, days, geoip }: {
         <h2 className="text-lg font-bold text-gray-800">접속 지역 — 한국 시·도({days}일)</h2>
         <table className="mt-3 w-full overflow-hidden rounded-xl border border-gray-200 bg-white text-sm">
           <thead className="bg-gray-50 text-xs text-gray-500">
-            <tr><th className="px-4 py-2 text-left">시·도</th><th className="px-4 py-2 text-right">방문자(일별 합)</th><th className="px-4 py-2 text-right">페이지·법령 조회</th></tr>
+            <tr><th className="px-4 py-2 text-left">시·도</th><th className="px-4 py-2 text-right">방문자(일별 합)</th><th className="whitespace-nowrap px-4 py-2 text-right">열람 페이지</th><th className="whitespace-nowrap px-4 py-2 text-right">법령 조회</th></tr>
           </thead>
           <tbody>
-            {regions.length === 0 && empty(3)}
+            {regions.length === 0 && empty(4)}
             {regions.map((r) => (
               <tr key={r.region} className="border-t border-gray-100">
                 <td className="px-4 py-2">{r.region}</td>
                 <td className="px-4 py-2 text-right tabular-nums">{r.visitors.toLocaleString()}</td>
-                <td className="px-4 py-2 text-right tabular-nums">{r.views.toLocaleString()}</td>
+                <td className="px-4 py-2 text-right tabular-nums">{r.pages.toLocaleString()}</td>
+                <td className="px-4 py-2 text-right tabular-nums">{r.law_views.toLocaleString()}</td>
               </tr>
             ))}
           </tbody>
@@ -71,10 +73,10 @@ export default function AreaOrgStats({ v, days, geoip }: {
         </div>
         <table className="mt-3 w-full overflow-hidden rounded-xl border border-gray-200 bg-white text-sm">
           <thead className="bg-gray-50 text-xs text-gray-500">
-            <tr><th className="px-4 py-2 text-left">기관</th><th className="whitespace-nowrap px-4 py-2 text-right">방문자</th><th className="whitespace-nowrap px-4 py-2 text-right">조회</th></tr>
+            <tr><th className="px-4 py-2 text-left">기관</th><th className="whitespace-nowrap px-4 py-2 text-right">방문자</th><th className="whitespace-nowrap px-4 py-2 text-right">열람 페이지</th><th className="whitespace-nowrap px-4 py-2 text-right">법령 조회</th></tr>
           </thead>
           <tbody>
-            {orgs.length === 0 && empty(3)}
+            {orgs.length === 0 && empty(4)}
             {orgs.map((o) => (
               <tr key={`${o.kind}-${o.org}`} className="border-t border-gray-100">
                 <td className="px-4 py-2">
@@ -83,7 +85,8 @@ export default function AreaOrgStats({ v, days, geoip }: {
                   {o.country && o.country !== "KR" && <span className="ml-1 text-xs text-gray-400">{o.country}</span>}
                 </td>
                 <td className="px-4 py-2 text-right tabular-nums">{o.visitors.toLocaleString()}</td>
-                <td className="px-4 py-2 text-right tabular-nums">{o.views.toLocaleString()}</td>
+                <td className="px-4 py-2 text-right tabular-nums">{o.pages.toLocaleString()}</td>
+                <td className="px-4 py-2 text-right tabular-nums">{o.law_views.toLocaleString()}</td>
               </tr>
             ))}
           </tbody>

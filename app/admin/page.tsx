@@ -9,13 +9,15 @@ import DeviceStats from "@/components/admin/DeviceStats";
 import VisitorStats from "@/components/admin/VisitorStats";
 import VisitPaths from "@/components/admin/VisitPaths";
 import OpDevice from "@/components/admin/OpDevice";
+import SourceStats from "@/components/admin/SourceStats";
 
 /**
  * 관리자 이용 추이(T43). 백엔드가 NKLAW_ADMIN_EMAILS 계정만 데이터를 준다(그 밖은 401·403).
  * 집계만 보인다 — 개별 회원·이메일은 없고, 검색어는 3회 이상 나온 것만 온다.
  */
+// T91: 'page' 는 열람한 화면 수, 'law_view' 는 그 화면에서 법령 본문을 연 건수(법령 페이지 하나 = 열람 페이지 1 + 법령 조회 1)
 const KIND_LABEL: Record<string, string> = {
-  page: "페이지",
+  page: "열람 페이지",
   law_view: "법령 조회",
   search: "검색",
   diff: "신구비교",
@@ -40,16 +42,22 @@ export default function AdminPage() {
     };
   }, [days]);
 
-  // 일별 합계(모든 종류) — 빈 날은 0
+  // T91: 일별 열람 페이지(kind=page) — 법령 조회·그 밖의 기능은 말풍선에 따로. 빈 날은 0
   const daily = useMemo(() => {
     if (!res || res.status !== 200) return [];
-    const by = new Map<string, number>();
-    for (const d of res.data.daily) by.set(d.day, (by.get(d.day) ?? 0) + d.count);
-    const out: { day: string; n: number }[] = [];
+    const by = new Map<string, { n: number; law: number; etc: number }>();
+    for (const d of res.data.daily) {
+      const x = by.get(d.day) ?? { n: 0, law: 0, etc: 0 };
+      if (d.kind === "page") x.n += d.count;
+      else if (d.kind === "law_view") x.law += d.count;
+      else x.etc += d.count;
+      by.set(d.day, x);
+    }
+    const out: { day: string; n: number; law: number; etc: number }[] = [];
     const end = new Date();
     for (let i = days - 1; i >= 0; i--) {
       const t = new Date(end.getTime() - i * 86400000 + 9 * 3600000).toISOString().slice(0, 10);
-      out.push({ day: t, n: by.get(t) ?? 0 });
+      out.push({ day: t, ...(by.get(t) ?? { n: 0, law: 0, etc: 0 }) });
     }
     return out;
   }, [res, days]);
@@ -138,6 +146,8 @@ export default function AdminPage() {
       {d.visitors && <DeviceStats v={d.visitors} days={days} />}
       {/* T85: 방문 분류 사유별 건수(봇·렌더러·사칭·의심·내부) */}
       {d.visitors && <ClassifyStats v={d.visitors} days={days} status={d.classifier} />}
+      {/* T91: 유입 경로(방문 첫 페이지의 출처 분류) */}
+      {d.visitors && <SourceStats v={d.visitors} days={days} />}
       {/* T89: 방문(탭)별 열람 순서·머문 시간 */}
       {d.visitors && <VisitPaths />}
 
@@ -151,9 +161,9 @@ export default function AdminPage() {
         ))}
       </ul>
 
-      <h2 className="mt-8 text-lg font-bold text-gray-800">일별 이용 건수</h2>
+      <h2 className="mt-8 text-lg font-bold text-gray-800">일별 열람 페이지</h2>
       <div className="mt-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-        <div className="relative flex h-40 items-end gap-[2px]" role="img" aria-label={`최근 ${days}일 일별 이용 건수`}>
+        <div className="relative flex h-40 items-end gap-[2px]" role="img" aria-label={`최근 ${days}일 일별 열람 페이지`}>
           {daily.map((x, i) => (
             <button
               key={x.day}
@@ -163,12 +173,12 @@ export default function AdminPage() {
               onMouseLeave={() => setHover(null)}
               onFocus={() => setHover(i)}
               onBlur={() => setHover(null)}
-              aria-label={`${x.day} ${x.n}건`}
+              aria-label={`${x.day} 열람 페이지 ${x.n}, 법령 조회 ${x.law}, 그 밖의 기능 ${x.etc}`}
             >
               <span className="block w-full max-w-[24px] rounded-t-[4px]" style={{ height: `${(x.n / max) * 100}%`, minHeight: x.n ? 2 : 0, background: BAR, opacity: hover === null || hover === i ? 1 : 0.45 }} />
               {hover === i && (
                 <span className="pointer-events-none absolute bottom-full z-10 mb-1 whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-xs text-white">
-                  {x.day} · <strong>{x.n}</strong>건
+                  {x.day} · 열람 페이지 <strong>{x.n}</strong> · 법령 조회 {x.law} · 그 밖의 기능 {x.etc}
                 </span>
               )}
             </button>
