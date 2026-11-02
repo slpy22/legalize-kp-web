@@ -177,7 +177,16 @@ export default async function LawPage({
           <div>
             <dt className="text-gray-500">채택일</dt>
             {/* T54 ver2: 일까지 모르는 채택(본문 미확보 법령)은 'YYYY-MM' 그대로 */}
-            <dd className="font-medium">{law.enactment_date ?? textStatus?.adopted ?? "-"}</dd>
+            <dd className="font-medium">
+              {law.enactment_date ?? textStatus?.adopted ?? "-"}
+              {/* T79: 채택일 설명(있는 법령만, 예: 조선로동당규약) */}
+              {data.meta?.adopted_note && (
+                <>
+                  {" "}
+                  <span className="text-xs font-normal text-gray-500">({data.meta.adopted_note})</span>
+                </>
+              )}
+            </dd>
           </div>
           <div>
             <dt className="text-gray-500">

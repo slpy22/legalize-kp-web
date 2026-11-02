@@ -67,6 +67,7 @@ export interface LawMeta {
   aliases: string[];
   date_disputes: DateDispute[];
   text?: TextStatus;   // T54: 본문 보유 상태
+  adopted_note?: string; // T79: 채택일 설명(frontmatter 채택일설명) — 있는 법령만
 }
 
 /** 본문 보유 상태(T54) — available=false 면 본문 미확보 법령(근거·확실성 동봉) */
