@@ -78,12 +78,15 @@ export interface AdminVisitors {
   // T85: 분류 사유별 일일 건수 — kind: search_bot·suspect·renderer(방문자 수에서 뺌) | suspicious(사람으로 셈, 사유만) | internal
   classes?: { day: string; kind: "search_bot" | "suspect" | "renderer" | "suspicious" | "internal"; name: string; hits: number }[];
   // T82: 내부 접속(LAN 클라이언트·관리자 계정) — 이용 기록·방문자 수에서 뺀 요청의 건수(기간 합계·일별)
-  internal?: { lan: number; admin: number; days: { day: string; lan: number; admin: number }[] };
+  // T90: device = 운영자 기기 쿠키, test = 점검 헤더
+  internal?: InternalCounts & { days: ({ day: string } & InternalCounts)[] };
   // T83: 접속 지역(한국 시·도)·접속 기관(분류·표시 이름은 서버가 붙임)
   regions?: { region: string; visitors: number; views: number }[];
   orgs?: { org: string; kind: string; country: string | null; visitors: number; views: number }[];
   devices?: { device: "mobile" | "tablet" | "pc" | "unknown" | "none"; visitors: number; views: number }[];   // T88 — none = 기록 전
 }
+
+export interface InternalCounts { lan: number; admin: number; device?: number; test?: number }
 
 async function call<T>(path: string, init?: RequestInit): Promise<{ status: number; data: T }> {
   const res = await fetch(`${API}/api/v1${path}`, { credentials: "same-origin", ...init });
@@ -125,6 +128,11 @@ export const adminVisits = (day: string, f: { region?: string; org?: string; dev
 };
 export const adminVisit = (visit: string) =>
   call<{ ok?: boolean; error?: string; visit: string; events: AdminVisitEvent[] }>(`/admin/usage/visits/${encodeURIComponent(visit)}`);
+
+/** T90: 이 브라우저(운영자 기기)를 이용 통계에서 뺄지 — 서명 쿠키, 관리자만 */
+export interface OpDevice { ok?: boolean; error?: string; on: boolean; auto: boolean; test_header: boolean }
+export const adminOpDevice = () => call<OpDevice>("/admin/usage/opdev");
+export const setAdminOpDevice = (on: boolean) => call<OpDevice>("/admin/usage/opdev", json({ on }));
 
 /** 구글 로그인 시작 주소(next 는 사이트 안쪽 경로) */
 export function loginHref(next = "/"): string {

@@ -18,13 +18,15 @@ const SEARCH_UA =
   /googlebot|google-inspectiontool|googleother|adsbot-google|mediapartners-google|storebot-google|\byeti\b|bingbot|adidxbot|bingpreview|\bdaum\/|daumoa|baiduspider|yandex\w*bot|yandeximages|applebot|sogou \w+ spider/i;
 const INTERNAL_API = process.env.INTERNAL_API_URL || "";
 
-/** 봇 화면 요청을 백엔드에 알린다(T52 — 방문자 수와 따로 셈). 기다리지 않고, 실패해도 화면에 영향이 없다. */
-function reportBot(ua: string, ip: string) {
+/** 봇 화면 요청을 백엔드에 알린다(T52 — 방문자 수와 따로 셈). 기다리지 않고, 실패해도 화면에 영향이 없다.
+ * T90: 점검 접속 표시 헤더(X-Nklaw-Test)가 있으면 그 값을 그대로 넘긴다 — 맞는지는 백엔드가 가린다(맞으면 봇 분류 대신 내부 점검 접속).
+ * 값은 로그·응답에 쓰지 않는다. */
+function reportBot(ua: string, ip: string, test: string | null) {
   if (!INTERNAL_API) return;
   void fetch(`${INTERNAL_API}/api/v1/usage/bot`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ ua: ua.slice(0, 400), ip }),
+    body: JSON.stringify({ ua: ua.slice(0, 400), ip, ...(test ? { test: test.slice(0, 200) } : {}) }),
   }).catch(() => {});
 }
 
@@ -33,7 +35,7 @@ export function proxy(request: NextRequest) {
   if (!ip) return NextResponse.next();
   const ua = request.headers.get("user-agent") || "";
   const bad = !ua.trim() || BAD_UA.test(ua);
-  if (bad || SEARCH_UA.test(ua)) reportBot(ua, ip);
+  if (bad || SEARCH_UA.test(ua)) reportBot(ua, ip, request.headers.get("x-nklaw-test"));
   if (!bad) return NextResponse.next();
   return new NextResponse(
     "자동 수집 도구로 보이는 접근은 허용하지 않습니다. 이용 조건: https://www.nk-law.kr/about/data\n" +

@@ -30,6 +30,8 @@ const REASON: Record<string, string> = {
   rdns_mismatch: "역DNS 는 수집기 이름인데 정방향 주소가 다름",
   lan: "내부망(LAN — 공유기 경유)",
   admin: "관리자 계정 로그인",
+  device: "운영자 기기(이 브라우저 집계 제외)",
+  test: "점검 접속(점검 헤더)",
 };
 
 type Row = { day: string; kind: string; name: string; hits: number };

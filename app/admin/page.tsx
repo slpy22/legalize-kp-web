@@ -8,6 +8,7 @@ import ClassifyStats from "@/components/admin/ClassifyStats";
 import DeviceStats from "@/components/admin/DeviceStats";
 import VisitorStats from "@/components/admin/VisitorStats";
 import VisitPaths from "@/components/admin/VisitPaths";
+import OpDevice from "@/components/admin/OpDevice";
 
 /**
  * 관리자 이용 추이(T43). 백엔드가 NKLAW_ADMIN_EMAILS 계정만 데이터를 준다(그 밖은 401·403).
@@ -111,6 +112,9 @@ export default function AdminPage() {
           {" "}— 내부망(공유기 경유)·관리자 본인 접속은 국가 없이 셉니다
         </p>
       ) : null}
+
+      {/* T90: 이 브라우저(운영자 기기) 집계 제외 켜기·끄기 */}
+      <OpDevice />
 
       <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
