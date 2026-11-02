@@ -7,6 +7,7 @@ import AreaOrgStats from "@/components/admin/AreaOrgStats";
 import ClassifyStats from "@/components/admin/ClassifyStats";
 import DeviceStats from "@/components/admin/DeviceStats";
 import VisitorStats from "@/components/admin/VisitorStats";
+import VisitPaths from "@/components/admin/VisitPaths";
 
 /**
  * 관리자 이용 추이(T43). 백엔드가 NKLAW_ADMIN_EMAILS 계정만 데이터를 준다(그 밖은 401·403).
@@ -133,6 +134,8 @@ export default function AdminPage() {
       {d.visitors && <DeviceStats v={d.visitors} days={days} />}
       {/* T85: 방문 분류 사유별 건수(봇·렌더러·사칭·의심·내부) */}
       {d.visitors && <ClassifyStats v={d.visitors} days={days} status={d.classifier} />}
+      {/* T89: 방문(탭)별 열람 순서·머문 시간 */}
+      {d.visitors && <VisitPaths />}
 
       <h2 className="mt-8 text-lg font-bold text-gray-800">기능별 이용({days}일)</h2>
       <ul className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">

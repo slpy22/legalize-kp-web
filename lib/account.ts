@@ -108,6 +108,24 @@ export const logout = () => call<{ ok: boolean }>("/auth/logout", { method: "POS
 export const withdraw = () => call<{ ok?: boolean; deleted?: boolean; error?: string }>("/auth/me", { method: "DELETE" });
 export const adminUsage = (days: number) => call<AdminUsage & { ok?: boolean; error?: string }>(`/admin/usage?days=${days}`);
 
+/** T89: 방문(탭) 단위 열람 순서 */
+export interface AdminVisitRow {
+  visit: string; start: string; last: string; span_sec: number; pages: number; events: number; dwell_sec: number;
+  region: string; org: string; org_kind: string; device: string;
+}
+export interface AdminVisits {
+  ok?: boolean; error?: string; day: string; ready: boolean; total: number; visits: AdminVisitRow[];
+  facets: Record<"region" | "org" | "device", { name: string; visits: number }[]>;
+}
+export interface AdminVisitEvent { ts: string; kind: string; path: string | null; law: string | null; seq: number | null; dwell_sec: number | null }
+export const adminVisits = (day: string, f: { region?: string; org?: string; device?: string } = {}) => {
+  const p = new URLSearchParams({ day });
+  for (const [k, v] of Object.entries(f)) if (v) p.set(k, v);
+  return call<AdminVisits>(`/admin/usage/visits?${p.toString()}`);
+};
+export const adminVisit = (visit: string) =>
+  call<{ ok?: boolean; error?: string; visit: string; events: AdminVisitEvent[] }>(`/admin/usage/visits/${encodeURIComponent(visit)}`);
+
 /** 구글 로그인 시작 주소(next 는 사이트 안쪽 경로) */
 export function loginHref(next = "/"): string {
   return `${API}/api/v1/auth/google/login?next=${encodeURIComponent(next)}`;
