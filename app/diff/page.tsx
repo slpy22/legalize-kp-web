@@ -463,14 +463,15 @@ function DiffContent() {
           {/* 의미론적 변화 리포트 */}
           {report && report.report && (
             <div className="rounded-lg border border-navy-light/30 bg-white p-6 shadow-sm">
-              <div className="mb-4 flex items-center gap-2 border-b border-gray-100 pb-3">
-                <h2 className="text-lg font-bold text-navy">변화 리포트</h2>
+              <div className="mb-4 flex flex-wrap items-baseline gap-x-2 gap-y-1 border-b border-gray-100 pb-3">
+                <h2 className="shrink-0 whitespace-nowrap text-lg font-bold text-navy">변화 리포트</h2>
                 <span className="text-xs text-gray-500">
                   {report.from.version_date} → {report.to.version_date} · AI 종합 분석
                   {report.generated_at ? ` · ${report.generated_at.slice(0, 16)} 작성` : ""}
                 </span>
               </div>
-              <article className="prose prose-sm max-w-none prose-headings:text-navy prose-h2:mt-5 prose-h2:text-base prose-strong:text-gray-900">
+              {/* T81: 리포트 안 제목은 카드 제목("변화 리포트", 18px)보다 작게 — h1 16px · h2 15px · h3 14px */}
+              <article className="prose prose-sm max-w-none prose-headings:text-navy prose-h1:mb-3 prose-h1:mt-0 prose-h1:text-base prose-h1:font-bold prose-h2:mb-2 prose-h2:mt-5 prose-h2:text-[15px] prose-h3:mb-1.5 prose-h3:mt-4 prose-h3:text-sm prose-strong:text-gray-900">
                 {/* T80: remark-gfm — 표·취소선·체크목록·자동 링크(챗봇과 같은 GFM) */}
                 <ReactMarkdown remarkPlugins={[remarkGfm]} components={REPORT_MD}>{report.report}</ReactMarkdown>
               </article>
