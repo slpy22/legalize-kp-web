@@ -3,7 +3,8 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { type Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { fetchLawVersions, fetchDiffSemantic, fetchDiffReport } from "@/lib/api";
 import type {
   LawVersionMeta,
@@ -16,6 +17,23 @@ import LawNameInput, { useLawIndex } from "@/components/LawNameInput";
 import { DIFF_QUICK_PICKS, diffHref } from "@/lib/showcase";
 import { track } from "@/lib/track";
 import { isApiError, nearestVersion } from "@/lib/versionMiss";
+
+/** T80: 리포트의 GFM 표는 표만 가로로 스크롤(좁은 화면에서 페이지가 넘치지 않게). */
+const REPORT_MD: Components = {
+  table: ({ children }) => (
+    <div className="not-prose my-4 overflow-x-auto rounded-md border border-gray-200" role="region" aria-label="표" tabIndex={0}>
+      <table className="min-w-full border-collapse text-left text-sm">{children}</table>
+    </div>
+  ),
+  thead: ({ children }) => <thead className="bg-gray-50">{children}</thead>,
+  // style: GFM 열 정렬(:---:)을 react-markdown 이 textAlign 으로 넘긴다
+  th: ({ children, style }) => (
+    <th style={style} className="whitespace-nowrap border-b border-r border-gray-200 px-3 py-2 font-semibold text-gray-800 last:border-r-0">{children}</th>
+  ),
+  td: ({ children, style }) => (
+    <td style={style} className="min-w-[8rem] border-b border-r border-gray-200 px-3 py-2 align-top text-gray-700 last:min-w-[14rem] last:border-r-0">{children}</td>
+  ),
+};
 
 function DiffContent() {
   const searchParams = useSearchParams();
@@ -453,7 +471,8 @@ function DiffContent() {
                 </span>
               </div>
               <article className="prose prose-sm max-w-none prose-headings:text-navy prose-h2:mt-5 prose-h2:text-base prose-strong:text-gray-900">
-                <ReactMarkdown>{report.report}</ReactMarkdown>
+                {/* T80: remark-gfm — 표·취소선·체크목록·자동 링크(챗봇과 같은 GFM) */}
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={REPORT_MD}>{report.report}</ReactMarkdown>
               </article>
               <p className="mt-4 border-t border-gray-100 pt-3 text-xs text-gray-400">
                 * 이 리포트는 조문 변화 데이터를 AI가 의미론적으로 종합한 것으로, 참고용입니다. 정확한 내용은 원문 조항을 확인하세요.
