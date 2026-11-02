@@ -36,7 +36,10 @@ type Row = { day: string; kind: string; name: string; hits: number };
 
 /** bot_days 한 줄 → (묶음, 화면 이름) */
 function groupOf(r: { kind: string; name: string }): [Group, string] {
-  if (r.kind === "renderer") return ["renderer", ENGINE[r.name] ?? r.name];
+  if (r.kind === "renderer") {
+    const f = r.name.match(/^(.*)\(뒤따름\)$/);          // T88: 수집기 직후 같은 엔진 대역에서 온 렌더러 요청(역DNS 없음)
+    return ["renderer", f ? `${ENGINE[f[1]] ?? f[1]}(수집 직후·역DNS 없음)` : ENGINE[r.name] ?? r.name];
+  }
   if (r.kind === "search_bot") {
     const m = r.name.match(/^(.*)\(렌더러\)$/);          // 스키마 적용 전 대체 기록
     return m ? ["renderer", ENGINE[m[1]] ?? m[1]] : ["search", r.name];

@@ -82,6 +82,7 @@ export interface AdminVisitors {
   // T83: 접속 지역(한국 시·도)·접속 기관(분류·표시 이름은 서버가 붙임)
   regions?: { region: string; visitors: number; views: number }[];
   orgs?: { org: string; kind: string; country: string | null; visitors: number; views: number }[];
+  devices?: { device: "mobile" | "tablet" | "pc" | "unknown" | "none"; visitors: number; views: number }[];   // T88 — none = 기록 전
 }
 
 async function call<T>(path: string, init?: RequestInit): Promise<{ status: number; data: T }> {

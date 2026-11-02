@@ -5,6 +5,7 @@ import Link from "next/link";
 import { adminUsage, type AdminUsage } from "@/lib/account";
 import AreaOrgStats from "@/components/admin/AreaOrgStats";
 import ClassifyStats from "@/components/admin/ClassifyStats";
+import DeviceStats from "@/components/admin/DeviceStats";
 import VisitorStats from "@/components/admin/VisitorStats";
 
 /**
@@ -128,6 +129,8 @@ export default function AdminPage() {
       {d.visitors && <VisitorStats v={d.visitors} days={days} geoip={d.geoip} />}
       {/* T83: 접속 지역·기관 */}
       {d.visitors && <AreaOrgStats v={d.visitors} days={days} geoip={d.geoip} />}
+      {/* T88: 접속 단말 종류(모바일·태블릿·PC) */}
+      {d.visitors && <DeviceStats v={d.visitors} days={days} />}
       {/* T85: 방문 분류 사유별 건수(봇·렌더러·사칭·의심·내부) */}
       {d.visitors && <ClassifyStats v={d.visitors} days={days} status={d.classifier} />}
 
