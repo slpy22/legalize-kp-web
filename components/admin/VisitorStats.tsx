@@ -191,6 +191,16 @@ export default function VisitorStats({ v, days, geoip }: {
             </tbody>
           </table>
           <p className="mt-2 text-xs text-gray-400">검색엔진은 역DNS 로 확인한 것만 &lsquo;확인됨&rsquo;으로, 이름만 흉내 낸 요청은 &lsquo;(사칭)&rsquo;으로 셉니다.</p>
+          {/* T82: 내부 접속은 통계에 넣지 않고 건수만 */}
+          <p className="mt-3 text-sm text-gray-700">
+            내부 접속({days}일) — 이용 기록·방문자 수에서 뺌:{" "}
+            <strong className="tabular-nums">{((v.internal?.lan ?? 0) + (v.internal?.admin ?? 0)).toLocaleString()}건</strong>
+            <span className="text-gray-500"> (내부망(LAN) {(v.internal?.lan ?? 0).toLocaleString()} · 관리자 계정 {(v.internal?.admin ?? 0).toLocaleString()})</span>
+          </p>
+          <p className="mt-1 text-xs text-gray-400">
+            공유기 경유(사무실·확인 요청 등 내부망 주소)와 관리자 계정으로 로그인한 접속입니다. 프록시·도커 경로(172.16~31.x·127.x)로 들어온 요청은
+            원본 IP 를 잃은 바깥 방문자일 수 있어 그대로 셉니다.
+          </p>
         </div>
       </div>
     </section>

@@ -84,17 +84,26 @@ export default function AdminPage() {
       </div>
       <p className="mt-1 text-xs text-gray-400">집계만 표시합니다(개별 회원 정보 없음). 검색어는 3회 이상 나온 것만 보입니다.</p>
       {d.ip_status?.missing_recent ? (
-        // T67: 원본 IP 가 오지 않으면(예: 포트 게시가 주소를 바꿈) IP 기반 기능이 꺼진 채로 돈다.
-        // T71: 공유기 경유·관리자 본인 접속(늘 사설)만으로는 띄우지 않는다 — 공인 IP 가 1시간 넘게 없을 때만
-        <p role="alert" className="mt-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <strong>실제 IP 미수신</strong> — 최근 1시간 동안 바깥 요청이 모두 내부망 주소로 들어왔고 실제(공인) IP 는 하나도 없었습니다
-          (내부망 {d.ip_status.private_1h ?? "?"}건, 마지막 공인 IP {d.ip_status.last_public_kst ?? "없음"}).
-          그동안 IP 기반 요청 제한·챗봇 IP 백스톱·&lsquo;쿠키 없이 집계&rsquo;·접속 국가가 멈춥니다. nginx·포트 게시가 원본 IP 를 넘기는지 확인하세요.
-        </p>
-      ) : d.ip_status?.last_public_kst ? (
+        // T67: 원본 IP 가 오지 않으면 IP 기반 기능이 꺼진 채로 돈다.
+        // T82: 경고는 프록시·도커 경로(172.16/12·127/8) 흔적이 있을 때만 — LAN(공유기 헤어핀)·공인 없음만으로는 띄우지 않는다
+        <div role="alert" className="mt-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <p>
+            <strong>실제 IP 미수신 의심</strong> — 최근 1시간 바깥 요청 {d.ip_status.proxy_1h ?? "?"}건이 프록시·도커 경로 주소(172.16~31.x·127.x)로
+            들어왔습니다. 원본 IP 를 잃은 흔적입니다(공인 {d.ip_status.public_1h ?? 0} / 내부망(LAN) {d.ip_status.lan_1h ?? 0} / 프록시 경유 {d.ip_status.proxy_1h ?? 0},
+            마지막 공인 IP {d.ip_status.last_public_kst ?? "없음"}). 그동안 IP 기반 요청 제한·챗봇 IP 백스톱·&lsquo;쿠키 없이 집계&rsquo;·접속 국가가 멈춥니다.
+          </p>
+          <p className="mt-1">
+            확인할 곳: 노트북 L4 프록시 예약 작업 <code>KISW-l4proxy</code> 가 실행 중인지, nginx 가 <code>listen … proxy_protocol</code> 과
+            <code> set_real_ip_from</code>·<code>real_ip_header proxy_protocol</code> 로 원본 IP 를 받는지.
+          </p>
+        </div>
+      ) : d.ip_status ? (
         <p className="mt-2 text-xs text-gray-500">
           <span aria-hidden className="mr-1 text-emerald-600">●</span>
-          실제 IP 수신 중(마지막 {d.ip_status.last_public_kst}) · 최근 1시간 공인 {d.ip_status.public_1h ?? 0} / 내부망 {d.ip_status.private_1h ?? 0}
+          원본 IP 정상 · 최근 1시간 공인 {d.ip_status.public_1h ?? 0} / 내부망(LAN) {d.ip_status.lan_1h ?? 0} / 프록시 경유 {d.ip_status.proxy_1h ?? 0}
+          {d.ip_status.last_public_kst ? <> · 마지막 공인 {d.ip_status.last_public_kst}</> : null}
+          {d.ip_status.warming_up ? <> · 재시작 뒤 1시간 안(시작 {d.ip_status.started_kst ?? "?"}) — 아직 집계가 적습니다</> : null}
+          {d.ip_status.no_public_1h ? <> · 최근 1시간 공인 IP 요청 없음(방문이 적은 시간일 수 있음 — 경고 아님)</> : null}
           {" "}— 내부망(공유기 경유)·관리자 본인 접속은 국가 없이 셉니다
         </p>
       ) : null}

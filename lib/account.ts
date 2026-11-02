@@ -43,13 +43,20 @@ export interface AdminUsage {
   visitors?: AdminVisitors;   // T52
   geoip?: { available: boolean; attribution: string; attribution_url: string };
   // T67: 바깥 요청의 실제(공인) IP 를 못 받고 있는지 — 그동안 IP 기반 제한·국가·쿠키 없이 집계가 멈춘다
-  // T71: missing_recent 는 사설만 있고 공인이 1시간 넘게 없을 때만. 최근 1시간 바깥 API 요청 수(공인·사설)
+  // T82: missing_recent 는 프록시·도커 경로(172.16/12·127/8) 흔적이 공인 이상일 때만. LAN(공유기 헤어핀)은 정상.
+  //      no_public_1h 는 정보(경고 아님), 재시작 뒤 1시간(warming_up) 동안은 false
   ip_status?: {
     missing_recent: boolean;
-    last_missing_kst: string | null;
-    last_public_kst: string | null;
     public_1h?: number;
-    private_1h?: number;
+    lan_1h?: number;
+    proxy_1h?: number;
+    private_1h?: number;          // 사설 합계(lan + proxy)
+    no_public_1h?: boolean;
+    warming_up?: boolean;
+    started_kst?: string | null;
+    last_public_kst: string | null;
+    last_lan_kst?: string | null;
+    last_proxy_kst?: string | null;
   };
 }
 
@@ -60,6 +67,8 @@ export interface AdminVisitors {
   monthly: { start: string; cookie_unique: number; member_unique: number; cookieless_daysum: number }[];
   countries: { country: string; visitors: number; views: number }[];
   bots: { kind: "search_bot" | "suspect"; name: string; hits: number }[];
+  // T82: 내부 접속(LAN 클라이언트·관리자 계정) — 이용 기록·방문자 수에서 뺀 요청의 건수(기간 합계·일별)
+  internal?: { lan: number; admin: number; days: { day: string; lan: number; admin: number }[] };
 }
 
 async function call<T>(path: string, init?: RequestInit): Promise<{ status: number; data: T }> {
