@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
+import { isApiError } from "@/lib/versionMiss";
 import { fetchHistory } from "@/lib/api";
 import AmendmentTimeline from "@/components/AmendmentTimeline";
 import CenterTrackedList, { officialDate, trackedAnchor } from "@/components/CenterTrackedList";
@@ -14,6 +16,7 @@ export default async function HistoryPage({
   const { name: rawName } = await params;
   const name = decodeURIComponent(rawName);
   const history = await fetchHistory(name);
+  if (isApiError(history)) notFound();   // T77: 없는 법령 → 404 안내(../not-found.tsx)
   // T47: 센터 추적 이력 — 타임라인의 같은 일자 행에 '센터 추적 근거' 배지로 잇는다
   const tracked = history.center_tracked ?? [];
   const trackedByDate: Record<string, string> = {};

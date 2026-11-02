@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { fetchLaw, fetchLawVersions } from "@/lib/api";
 import UnavailableNotice from "@/components/UnavailableNotice";
 import ArticleView from "@/components/ArticleView";
@@ -10,6 +11,7 @@ import ProvenanceBadges from "@/components/ProvenanceBadges";
 import type { LawDetail, LawVersionDetail } from "@/lib/types";
 import { diffHref } from "@/lib/showcase";
 import { TrackOnMount } from "@/components/UsageTracker";
+import { isApiError } from "@/lib/versionMiss";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +20,8 @@ export async function generateMetadata({ params }: { params: Promise<{ name: str
   const name = decodeURIComponent(rawName);
   try {
     const data = await fetchLaw(name);
+    // T77: 없는 법령은 본문 화면 대신 404 안내(not-found.tsx)로 간다
+    if (isApiError(data)) return { title: "법령을 찾을 수 없습니다", robots: { index: false } };
     const law = data.law;
     return {
       title: `${name} - 북한 법령`,
@@ -66,6 +70,8 @@ export default async function LawPage({
     fetchLaw(name, version),
     fetchLawVersions(name).catch(() => ({ law_name: name, versions: [], total: 0 })),
   ]);
+  // T77: 없는 법령·없는 판본 일자(API 가 200 + error 로 답함)는 404 안내 화면으로 — 본문으로 읽으면 500 이 났다
+  if (isApiError(data)) notFound();
   const law = data.law;
   const articles = data.articles;
   const textStatus = data.meta?.text;          // T54: 본문 미확보면 조문 대신 근거·확실성

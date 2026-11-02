@@ -15,6 +15,7 @@ import SideBySideDiff from "@/components/SideBySideDiff";
 import LawNameInput, { useLawIndex } from "@/components/LawNameInput";
 import { DIFF_QUICK_PICKS, diffHref } from "@/lib/showcase";
 import { track } from "@/lib/track";
+import { isApiError, nearestVersion } from "@/lib/versionMiss";
 
 function DiffContent() {
   const searchParams = useSearchParams();
@@ -33,6 +34,7 @@ function DiffContent() {
   const [showSame, setShowSame] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [dateNotice, setDateNotice] = useState("");   // T77: 주소의 판본 일자가 없을 때 안내
   const [report, setReport] = useState<DiffReportData | null>(null);
   const [reportLoading, setReportLoading] = useState(false);
   // T74: 리포트는 서버가 백그라운드로 만든다(1~2분). 진행 중이면 몇 초마다 같은 요청을 다시 보낸다.
@@ -67,12 +69,18 @@ function DiffContent() {
   async function loadVersions(lawName = name, want1 = "", want2 = "") {
     if (!lawName.trim()) return;
     setError("");
+    setDateNotice("");
     setLoaded(false);
     setVersions([]);
     setDiff(null);
     stopReport();
     try {
       const resp = await fetchLawVersions(lawName.trim());
+      // T77: 없는 법령은 API 가 200 + error 로 답한다 — '판본 2건 미만'이 아니라 법령이 없다고 알린다
+      if (isApiError(resp)) {
+        setError(`‘${lawName.trim()}’ 법령을 찾을 수 없습니다. 법령명을 다시 확인해 주세요.`);
+        return;
+      }
       const vs = resp.versions || [];
       setVersions(vs);
       setLoaded(true);
@@ -81,9 +89,15 @@ function DiffContent() {
           (a.version_date || "").localeCompare(b.version_date || "")
         );
         const has = (d: string) => sorted.some((v) => v.version_date === d);
-        // 주소로 받은 시점이 보유 판본이면 그대로, 아니면 처음·마지막 판본
-        const d1 = has(want1) ? want1 : sorted[0].version_date;
-        const d2 = has(want2) ? want2 : sorted[sorted.length - 1].version_date;
+        const dates = sorted.map((v) => v.version_date);
+        // 주소로 받은 시점이 보유 판본이면 그대로, 없는 일자면 가장 가까운 판본(T77), 주소에 없으면 처음·마지막 판본
+        const pick = (want: string, dflt: string) => (!want || has(want) ? (want || dflt) : (nearestVersion(want, dates).nearest ?? dflt));
+        const d1 = pick(want1, sorted[0].version_date);
+        const d2 = pick(want2, sorted[sorted.length - 1].version_date);
+        const missing = [want1, want2].filter((w) => w && !has(w));
+        if (missing.length) {
+          setDateNotice(`주소의 판본 일자 ${missing.join("·")} 은(는) 이 법령에 없습니다. 가장 가까운 판본(${d1} → ${d2})을 골라 두었으니 확인한 뒤 비교해 주세요.`);
+        }
         setDate1(d1);
         setDate2(d2);
         if (has(want1) && has(want2) && want1 !== want2) await runDiff(lawName, want1, want2);
@@ -343,6 +357,9 @@ function DiffContent() {
       )}
 
       {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
+      {dateNotice && !diff && (
+        <p className="mb-4 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800" role="status">{dateNotice}</p>
+      )}
       {loading && (
         <p className="mb-4 rounded-lg bg-navy-light/5 px-4 py-3 text-sm text-navy" role="status">
           두 판본을 의미로 짝짓는 중입니다… (조문 수에 따라 몇 초 걸릴 수 있습니다)
