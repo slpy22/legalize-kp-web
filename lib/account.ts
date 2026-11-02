@@ -46,6 +46,12 @@ export interface AdminUsage {
   // T67: 바깥 요청의 실제(공인) IP 를 못 받고 있는지 — 그동안 IP 기반 제한·국가·쿠키 없이 집계가 멈춘다
   // T82: missing_recent 는 프록시·도커 경로(172.16/12·127/8) 흔적이 공인 이상일 때만. LAN(공유기 헤어핀)은 정상.
   //      no_public_1h 는 정보(경고 아님), 재시작 뒤 1시간(warming_up) 동안은 false
+  // T85: 역DNS 확인 동작 상태(프로세스 시작 뒤 누계) — DNS 가 답하지 않으면 사람 UA 는 사람으로 센다
+  classifier?: {
+    enabled: boolean; since_kst: string; cache_size: number; inflight: number;
+    resolver?: "system" | "servers"; ptr_ok?: boolean | null;   // ptr_ok=false: 시스템 DNS 가 역DNS 에 답하지 않음(확인 실패로 셈)
+    lookups: number; cache_hits: number; crawler: number; none: number; mismatch: number; unknown: number; timeouts: number; busy: number;
+  };
   ip_status?: {
     missing_recent: boolean;
     public_1h?: number;
@@ -67,7 +73,10 @@ export interface AdminVisitors {
   weekly: { start: string; cookie_unique: number; member_unique: number; cookieless_daysum: number }[];
   monthly: { start: string; cookie_unique: number; member_unique: number; cookieless_daysum: number }[];
   countries: { country: string; visitors: number; views: number }[];
-  bots: { kind: "search_bot" | "suspect"; name: string; hits: number }[];
+  // T85: renderer = 검색엔진 렌더러(사람 UA 로 화면 JS 를 실행한 수집기 — 역DNS+정방향 확인)
+  bots: { kind: "search_bot" | "suspect" | "renderer"; name: string; hits: number }[];
+  // T85: 분류 사유별 일일 건수 — kind: search_bot·suspect·renderer(방문자 수에서 뺌) | suspicious(사람으로 셈, 사유만) | internal
+  classes?: { day: string; kind: "search_bot" | "suspect" | "renderer" | "suspicious" | "internal"; name: string; hits: number }[];
   // T82: 내부 접속(LAN 클라이언트·관리자 계정) — 이용 기록·방문자 수에서 뺀 요청의 건수(기간 합계·일별)
   internal?: { lan: number; admin: number; days: { day: string; lan: number; admin: number }[] };
   // T83: 접속 지역(한국 시·도)·접속 기관(분류·표시 이름은 서버가 붙임)

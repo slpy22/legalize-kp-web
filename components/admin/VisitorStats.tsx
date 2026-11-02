@@ -183,14 +183,14 @@ export default function VisitorStats({ v, days, geoip }: {
               {v.bots.length === 0 && <tr><td colSpan={3} className="px-4 py-3 text-gray-400">아직 기록이 없습니다.</td></tr>}
               {v.bots.map((b) => (
                 <tr key={`${b.kind}-${b.name}`} className="border-t border-gray-100">
-                  <td className="px-4 py-2">{b.kind === "search_bot" ? "검색엔진(확인됨)" : "의심·수집 도구"}</td>
+                  <td className="px-4 py-2">{b.kind === "search_bot" ? "검색엔진(확인됨)" : b.kind === "renderer" ? "검색엔진 렌더러" : "수집 도구·사칭"}</td>
                   <td className="px-4 py-2">{b.name}</td>
                   <td className="px-4 py-2 text-right tabular-nums">{b.hits.toLocaleString()}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <p className="mt-2 text-xs text-gray-400">검색엔진은 역DNS 로 확인한 것만 &lsquo;확인됨&rsquo;으로, 이름만 흉내 낸 요청은 &lsquo;(사칭)&rsquo;으로 셉니다.</p>
+          <p className="mt-2 text-xs text-gray-400">검색엔진은 역DNS 로 확인한 것만 &lsquo;확인됨&rsquo;으로, 이름만 흉내 낸 요청은 &lsquo;(사칭)&rsquo;으로 셉니다. &lsquo;렌더러&rsquo;는 사람 브라우저처럼 보이지만 접속 주소가 검색엔진 수집기로 확인된 요청입니다(사유별 건수는 아래 &lsquo;방문 분류 사유&rsquo;).</p>
           {/* T82: 내부 접속은 통계에 넣지 않고 건수만 */}
           <p className="mt-3 text-sm text-gray-700">
             내부 접속({days}일) — 이용 기록·방문자 수에서 뺌:{" "}
