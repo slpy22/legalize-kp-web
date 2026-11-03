@@ -10,6 +10,8 @@ import { decPath } from "./decPath";
  * 머문 시간은 페이지가 화면에 보이는 상태로 있던 시간만(숨긴 탭 시간은 뺌, 한 페이지 최대 60분). 검색어는 보이지 않는다.
  * T91: 열람 순서는 화면(page) 기준 — 법령 조회(law_view)는 따로 줄을 만들지 않고 그 화면 줄에 표시한다. 유입 경로(첫 페이지의 출처) 칸·거르기.
  * T93: 페이지 주소는 글자로 풀어 보인다(decPath — 잘못된 인코딩은 원문 그대로).
+ * T96: 머문 시간 '측정 안 됨'(신호가 오지 않음 — 보이는 상태가 0.5초 미만이었거나 뒤 탭·아직 열림·렌더러)과
+ *      측정된 값을 가른다(값 0 은 '1초 미만' — 지금 화면은 0 을 보내지 않지만 API 는 받는다). 방문 합계는 측정된 페이지만 더하고, 일부만 측정됐으면 그 수를 붙인다.
  */
 const DEVICE: Record<string, string> = { mobile: "모바일", tablet: "태블릿", pc: "PC", unknown: "알 수 없음", none: "기록 전" };
 export const SRC: Record<string, string> = {
@@ -29,6 +31,31 @@ function dur(sec: number | null | undefined): string {
   const m = Math.floor(sec / 60);
   if (m < 60) return `${m}분 ${sec % 60}초`;
   return `${Math.floor(m / 60)}시간 ${m % 60}분`;
+}
+
+const UNMEASURED = "측정 안 됨";
+const UNMEASURED_TIP = "머문 시간 신호가 오지 않았습니다 — 보이는 상태로 0.5초를 못 넘겼거나, 뒤 탭으로 열려 아직 보지 않았거나, 화면을 그리기만 한 렌더러입니다.";
+
+/** T96: 페이지 하나의 머문 시간 — null 은 '측정 안 됨', 0 은 '1초 미만'. */
+function Dwell({ sec }: { sec: number | null | undefined }) {
+  if (sec == null) return <span className="text-gray-400" title={UNMEASURED_TIP}>{UNMEASURED}</span>;
+  return <>{sec === 0 ? "1초 미만" : dur(sec)}</>;
+}
+
+/** T96: 방문의 머문 시간 합 — 측정된 페이지만 더한다. 일부 페이지만 측정됐으면 '(n쪽 중 m쪽)'.
+ * 백엔드(T96)는 측정된 페이지가 없으면 dwell_sec 를 null 로, 측정된 페이지 수를 dwell_pages 로 준다(옛 백엔드는 0·없음). */
+function DwellSum({ sec, measured, pages }: { sec: number | null | undefined; measured?: number; pages: number }) {
+  if (sec == null) return <Dwell sec={null} />;
+  return (
+    <>
+      <Dwell sec={sec} />
+      {measured != null && measured < pages && (
+        <span className="ml-1 text-xs text-gray-400" title={`${pages - measured}쪽은 머문 시간 신호가 없어 합에 넣지 않았습니다.`}>
+          ({pages}쪽 중 {measured}쪽)
+        </span>
+      )}
+    </>
+  );
 }
 
 const hm = (ts: string) => ts.slice(11, 19);
@@ -161,7 +188,7 @@ export default function VisitPaths() {
                       </td>
                       <td className="px-3 py-2 text-right tabular-nums">{v.pages}</td>
                       <td className="px-3 py-2 text-right tabular-nums">{v.law_views ?? "—"}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{dur(v.dwell_sec)}</td>
+                      <td className="px-3 py-2 text-right tabular-nums"><DwellSum sec={v.dwell_sec} measured={(v as typeof v & { dwell_pages?: number }).dwell_pages} pages={v.pages} /></td>
                       <td className="px-3 py-2 text-right tabular-nums">{dur(v.span_sec)}</td>
                       <td className="px-3 py-2">{v.region}</td>
                       <td className="px-3 py-2">{v.org}</td>
@@ -190,7 +217,7 @@ export default function VisitPaths() {
                                       </span>
                                     )}
                                   </span>
-                                  {e.kind === "page" && <span className="shrink-0 tabular-nums">{dur(e.dwell_sec)}</span>}
+                                  {e.kind === "page" && <span className="shrink-0 tabular-nums"><Dwell sec={e.dwell_sec} /></span>}
                                 </li>
                               ))}
                             </ol>
@@ -212,6 +239,7 @@ export default function VisitPaths() {
         방문은 브라우저 탭 하나의 기록입니다(탭을 닫으면 끝, 날짜를 넘어 잇지 않음). 지역·기관·단말·유입은 그 방문의 첫 기록 기준입니다.
         열람 페이지는 화면 수이고, 법령 조회는 그 화면에서 법령 본문을 연 건수입니다(법령 페이지 하나 = 열람 페이지 1 + 법령 조회 1).
         머문 시간은 페이지가 화면에 보이는 동안만 셉니다(한 페이지 최대 60분, 마지막 페이지는 탭을 닫을 때 못 받을 수 있음).
+        「측정 안 됨」은 머문 시간 신호가 오지 않은 페이지입니다(보이는 상태로 0.5초를 못 넘김·뒤 탭으로 열고 아직 안 봄·렌더러). 0초와 다르며 합계에 넣지 않습니다.
         봇·내부 접속은 지금처럼 빠지고, 검색어는 보이지 않습니다.
       </p>
     </div>
