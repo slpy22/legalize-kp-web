@@ -132,11 +132,12 @@ export default async function LawPage({
     <section className="mx-auto max-w-6xl px-4 py-8">
       {/* 브레드크럼 */}
       <nav className="mb-6 text-sm text-gray-500">
-        <Link href="/" className="hover:text-navy-light">
+        <Link prefetch={false} href="/" className="hover:text-navy-light">
           홈
         </Link>
         <span className="mx-2">/</span>
         <Link
+          prefetch={false}
           href={`/category/${encodeURIComponent(law.category)}`}
           className="hover:text-navy-light"
         >
@@ -230,6 +231,7 @@ export default async function LawPage({
       {/* 액션 버튼 */}
       <div className="mb-8 flex flex-wrap gap-3">
         <Link
+          prefetch={false}
           href={`/law/${encodeURIComponent(law.name)}/history`}
           className="rounded-lg border border-navy-light px-4 py-2 text-sm font-medium text-navy-light transition-colors hover:bg-navy-light hover:text-white"
         >
@@ -237,6 +239,7 @@ export default async function LawPage({
         </Link>
         {recentTwo.length === 2 && (
           <Link
+            prefetch={false}
             href={diffHref(law.name, recentTwo[0], recentTwo[1])}
             className="rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-navy-light"
           >
@@ -245,6 +248,7 @@ export default async function LawPage({
         )}
         {!unavailable && (
           <Link
+            prefetch={false}
             href={`/diff?name=${encodeURIComponent(law.name)}`}
             className="rounded-lg border border-navy-light px-4 py-2 text-sm font-medium text-navy-light transition-colors hover:bg-navy-light hover:text-white"
           >
@@ -253,6 +257,7 @@ export default async function LawPage({
         )}
         {/* T42: 매핑 상세로 바로 간다(매핑이 없는 법령은 상세 페이지가 그 사실을 알려 준다) */}
         <Link
+          prefetch={false}
           href={`/compare/${encodeURIComponent(law.name)}`}
           className="rounded-lg border border-navy-light px-4 py-2 text-sm font-medium text-navy-light transition-colors hover:bg-navy-light hover:text-white"
         >
@@ -285,7 +290,7 @@ export default async function LawPage({
                   <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
                     최신 판본({excerpt.latest_version})은 일부 조만 있는 <strong>일부본</strong>입니다(원천 자료가 빠짐).
                     없는 조 {excerpt.missing.length}개는{" "}
-                    <Link href={`/law/${encodeURIComponent(law.name)}?version=${excerpt.fallback_version}`} className="font-semibold underline">
+                    <Link prefetch={false} href={`/law/${encodeURIComponent(law.name)}?version=${excerpt.fallback_version}`} className="font-semibold underline">
                       직전 전문 판본({excerpt.fallback_version})
                     </Link>
                     에서 볼 수 있습니다. 아래 본문은 최신 판본 그대로입니다.

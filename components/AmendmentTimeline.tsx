@@ -85,12 +85,14 @@ export default function AmendmentTimeline({ amendments, lawName, trackedByDate }
                 {item.has_text && lawName && (
                   <div className="mt-2 flex flex-wrap gap-3 text-xs">
                     <Link
+                      prefetch={false}
                       href={`/law/${encodeURIComponent(lawName)}?version=${item.date}`}
                       className="text-navy-light hover:underline"
                     >
                       이 시점 본문 보기 →
                     </Link>
                     <Link
+                      prefetch={false}
                       href={`/diff?name=${encodeURIComponent(lawName)}`}
                       className="text-navy-light hover:underline"
                     >

@@ -65,7 +65,7 @@ export default function UnavailableNotice({ text, lawName, compact = false }: { 
       )}
       {!compact && (
         <p className="mt-3">
-          <Link href={`/law/${encodeURIComponent(lawName)}/history`} className="font-semibold text-navy-light hover:underline">
+          <Link prefetch={false} href={`/law/${encodeURIComponent(lawName)}/history`} className="font-semibold text-navy-light hover:underline">
             알려진 개정 이력 보기 →
           </Link>
         </p>

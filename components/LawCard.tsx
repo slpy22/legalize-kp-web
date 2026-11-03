@@ -10,6 +10,7 @@ interface Props {
 export default function LawCard({ law }: Props) {
   return (
     <Link
+      prefetch={false}
       href={`/law/${encodeURIComponent(law.name)}`}
       className="group block rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-all hover:border-navy-light hover:shadow-md"
     >

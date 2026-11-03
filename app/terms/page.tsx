@@ -36,8 +36,8 @@ export default function TermsPage() {
       <h2 id="member">3. 회원 가입·탈퇴</h2>
       <ul>
         <li>회원 가입은 선택이며 구글 계정으로 합니다. 만 14세 미만은 가입할 수 없습니다.</li>
-        <li>가입 시 이 약관과 <Link href="/privacy">개인정보 처리방침</Link>의 필수 항목에 동의해야 합니다. &lsquo;이용 기록 분석&rsquo;은 선택이며 언제든 철회할 수 있습니다.</li>
-        <li>회원은 언제든지 <Link href="/account">내 계정</Link>에서 탈퇴할 수 있으며, 탈퇴 즉시 회원 정보가 삭제됩니다.</li>
+        <li>가입 시 이 약관과 <Link prefetch={false} href="/privacy">개인정보 처리방침</Link>의 필수 항목에 동의해야 합니다. &lsquo;이용 기록 분석&rsquo;은 선택이며 언제든 철회할 수 있습니다.</li>
+        <li>회원은 언제든지 <Link prefetch={false} href="/account">내 계정</Link>에서 탈퇴할 수 있으며, 탈퇴 즉시 회원 정보가 삭제됩니다.</li>
       </ul>
 
       <h2 id="duty">4. 이용자의 의무</h2>
@@ -72,7 +72,7 @@ export default function TermsPage() {
           학회의 권리에 들지 않으며 각 권리자에게 있습니다.
         </li>
       </ol>
-      <p>자세한 내용은 <Link href="/about/data">데이터와 권리 안내</Link>를 보세요.</p>
+      <p>자세한 내용은 <Link prefetch={false} href="/about/data">데이터와 권리 안내</Link>를 보세요.</p>
 
       <h2 id="change">7. 서비스 변경·중단</h2>
       <p>학회는 운영상·기술상 필요에 따라 서비스를 바꾸거나 중단할 수 있으며, 중요한 변경은 미리 공지합니다. 약관이 바뀌면 시행 7일 전(이용자에게 불리한 변경은 30일 전) 공지하고, 회원에게는 다음 로그인 때 다시 동의를 받습니다.</p>

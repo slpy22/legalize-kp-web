@@ -79,9 +79,9 @@ function TermsContent() {
     <section className="mx-auto max-w-6xl px-4 py-8">
       {/* 브레드크럼 */}
       <nav className="mb-6 text-sm text-gray-500">
-        <Link href="/" className="hover:text-navy-light">홈</Link>
+        <Link prefetch={false} href="/" className="hover:text-navy-light">홈</Link>
         <span className="mx-2">/</span>
-        <Link href="/compare" className="hover:text-navy-light">남북비교</Link>
+        <Link prefetch={false} href="/compare" className="hover:text-navy-light">남북비교</Link>
         <span className="mx-2">/</span>
         <span className="font-medium text-gray-800">용어비교</span>
       </nav>

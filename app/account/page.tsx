@@ -36,7 +36,7 @@ export default function AccountPage() {
       <section className="mx-auto max-w-md px-4 py-12 text-sm text-gray-700">
         <h1 className="text-2xl font-bold text-gray-900">내 계정</h1>
         <p className="mt-4">로그인하지 않았습니다. 로그인 없이도 모든 기능을 쓸 수 있습니다.</p>
-        <Link href="/login?next=/account" className="mt-4 inline-block font-semibold text-navy-light underline">로그인</Link>
+        <Link prefetch={false} href="/login?next=/account" className="mt-4 inline-block font-semibold text-navy-light underline">로그인</Link>
       </section>
     );
   }
@@ -135,7 +135,7 @@ export default function AccountPage() {
         )}
       </div>
       <p className="mt-6 text-xs text-gray-500">
-        <Link href="/privacy" className="font-semibold underline">개인정보 처리방침</Link> · <Link href="/terms" className="underline">이용약관</Link>
+        <Link prefetch={false} href="/privacy" className="font-semibold underline">개인정보 처리방침</Link> · <Link prefetch={false} href="/terms" className="underline">이용약관</Link>
       </p>
     </section>
   );

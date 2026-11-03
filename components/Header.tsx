@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import IntentLink from "@/components/IntentLink";
 import { usePathname } from "next/navigation";
 import { useChatSidebar } from "@/components/ChatSidebarProvider";
 import AuthMenu from "@/components/AuthMenu";
@@ -94,7 +95,7 @@ export default function Header() {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         {/* 로고 + 운영주체 */}
         <div className="flex items-baseline gap-2">
-          <Link
+          <IntentLink
             href="/"
             className="flex items-baseline gap-2 text-base font-bold tracking-tight sm:text-lg"
             onClick={() => setMenuOpen(false)}
@@ -106,7 +107,7 @@ export default function Header() {
               <Image src="/brand/nk-law-mark.png" alt="" width={24} height={24} unoptimized className="h-full w-full" />
             </span>
             북한법률정보센터
-          </Link>
+          </IntentLink>
           <a
             href="https://www.nkls.or.kr/index.ink"
             target="_blank"
@@ -124,13 +125,13 @@ export default function Header() {
             if (item.kind === "link") {
               const active = isActive(item.href, pathname);
               return (
-                <Link
+                <IntentLink
                   key={item.href}
                   href={item.href}
                   className={`rounded px-3 py-1.5 text-sm transition-colors ${active ? "bg-white/20 font-semibold" : "hover:bg-white/10"}`}
                 >
                   {item.label}
-                </Link>
+                </IntentLink>
               );
             }
             // group (드롭다운)
@@ -156,6 +157,7 @@ export default function Header() {
                       const subActive = isActive(sub.href, pathname);
                       return (
                         <Link
+                          prefetch={false}
                           key={sub.href}
                           href={sub.href}
                           onClick={() => setGroupOpen(false)}
@@ -219,6 +221,7 @@ export default function Header() {
               const active = isActive(item.href, pathname);
               return (
                 <Link
+                  prefetch={false}
                   key={item.href}
                   href={item.href}
                   onClick={() => setMenuOpen(false)}
@@ -236,6 +239,7 @@ export default function Header() {
                   const subActive = isActive(sub.href, pathname);
                   return (
                     <Link
+                      prefetch={false}
                       key={sub.href}
                       href={sub.href}
                       onClick={() => setMenuOpen(false)}

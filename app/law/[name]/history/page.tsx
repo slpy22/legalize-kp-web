@@ -30,11 +30,12 @@ export default async function HistoryPage({
     <section className="mx-auto max-w-4xl px-4 py-8">
       {/* 브레드크럼 */}
       <nav className="mb-6 text-sm text-gray-500">
-        <Link href="/" className="hover:text-navy-light">
+        <Link prefetch={false} href="/" className="hover:text-navy-light">
           홈
         </Link>
         <span className="mx-2">/</span>
         <Link
+          prefetch={false}
           href={`/law/${encodeURIComponent(name)}`}
           className="hover:text-navy-light"
         >

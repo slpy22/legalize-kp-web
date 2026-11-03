@@ -17,7 +17,7 @@ export default function LegalDoc({
   return (
     <section className="mx-auto max-w-3xl px-4 py-8">
       <nav className="mb-6 text-sm text-gray-500">
-        <Link href="/" className="hover:text-navy-light">홈</Link>
+        <Link prefetch={false} href="/" className="hover:text-navy-light">홈</Link>
         <span className="mx-2">/</span>
         <span className="font-medium text-gray-800">{title}</span>
       </nav>

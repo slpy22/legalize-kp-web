@@ -90,9 +90,9 @@ function CompareDetailContent() {
   if (error) return (
     <section className="mx-auto max-w-6xl px-4 py-8">
       <nav className="mb-6 text-sm text-gray-500">
-        <Link href="/" className="hover:text-navy-light">홈</Link>
+        <Link prefetch={false} href="/" className="hover:text-navy-light">홈</Link>
         <span className="mx-2">/</span>
-        <Link href="/compare" className="hover:text-navy-light">남북비교</Link>
+        <Link prefetch={false} href="/compare" className="hover:text-navy-light">남북비교</Link>
         <span className="mx-2">/</span>
         <span className="font-medium text-gray-800">{kpName}</span>
       </nav>
@@ -105,9 +105,9 @@ function CompareDetailContent() {
   if (unmapped?.mapped === false) return (
     <section className="mx-auto max-w-6xl px-4 py-8">
       <nav className="mb-6 text-sm text-gray-500">
-        <Link href="/" className="hover:text-navy-light">홈</Link>
+        <Link prefetch={false} href="/" className="hover:text-navy-light">홈</Link>
         <span className="mx-2">/</span>
-        <Link href="/compare" className="hover:text-navy-light">남북비교</Link>
+        <Link prefetch={false} href="/compare" className="hover:text-navy-light">남북비교</Link>
         <span className="mx-2">/</span>
         <span className="font-medium text-gray-800">{kpName}</span>
       </nav>
@@ -115,7 +115,7 @@ function CompareDetailContent() {
         <p className="font-medium text-gray-700">남북 비교 매핑이 아직 작성되지 않은 법령입니다.</p>
         <p className="mt-1">{unmapped.message}</p>
         <p className="mt-3">
-          <Link href={`/law/${encodeURIComponent(kpName)}`} className="text-navy-light hover:underline">
+          <Link prefetch={false} href={`/law/${encodeURIComponent(kpName)}`} className="text-navy-light hover:underline">
             북한법 원문 보기 →
           </Link>
         </p>
@@ -137,9 +137,9 @@ function CompareDetailContent() {
     <section className="mx-auto max-w-6xl px-4 py-8">
       {/* 브레드크럼 */}
       <nav className="mb-6 text-sm text-gray-500">
-        <Link href="/" className="hover:text-navy-light">홈</Link>
+        <Link prefetch={false} href="/" className="hover:text-navy-light">홈</Link>
         <span className="mx-2">/</span>
-        <Link href="/compare" className="hover:text-navy-light">남북비교</Link>
+        <Link prefetch={false} href="/compare" className="hover:text-navy-light">남북비교</Link>
         <span className="mx-2">/</span>
         <span className="font-medium text-gray-800">{kpName}</span>
       </nav>
@@ -336,12 +336,14 @@ function CompareDetailContent() {
             <div key={idx} className="flex flex-wrap gap-3">
               <span className="flex items-center text-sm text-gray-500">{krName}:</span>
               <Link
+                prefetch={false}
                 href={`/compare/${encodeURIComponent(kpName)}/articles?kr_name=${encodeURIComponent(krName)}`}
                 className="rounded-lg border border-navy-light px-4 py-2 text-sm font-medium text-navy-light transition-colors hover:bg-navy-light hover:text-white"
               >
                 조문 비교
               </Link>
               <Link
+                prefetch={false}
                 href={`/compare/${encodeURIComponent(kpName)}/structure?kr_name=${encodeURIComponent(krName)}`}
                 className="rounded-lg border border-navy-light px-4 py-2 text-sm font-medium text-navy-light transition-colors hover:bg-navy-light hover:text-white"
               >

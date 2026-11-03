@@ -16,7 +16,7 @@ const ITEMS: { key: Key; required: boolean; title: string; detail: React.ReactNo
     key: "terms",
     required: true,
     title: "이용약관 동의",
-    detail: <><Link href="/terms" target="_blank" className="underline">이용약관 전문 보기</Link></>,
+    detail: <><Link prefetch={false} href="/terms" target="_blank" className="underline">이용약관 전문 보기</Link></>,
   },
   {
     key: "privacy_required",
@@ -81,7 +81,7 @@ function ConsentContent() {
       <section className="mx-auto max-w-md px-4 py-12 text-sm text-gray-700">
         <h1 className="text-2xl font-bold text-gray-900">동의</h1>
         <p className="mt-4">동의를 기다리는 로그인이 없거나 15분이 지나 만료됐습니다.</p>
-        <Link href={`/login?next=${encodeURIComponent(next)}`} className="mt-4 inline-block font-semibold text-navy-light underline">
+        <Link prefetch={false} href={`/login?next=${encodeURIComponent(next)}`} className="mt-4 inline-block font-semibold text-navy-light underline">
           다시 로그인
         </Link>
       </section>
@@ -98,8 +98,8 @@ function ConsentContent() {
       {info.existing && (
         // T47·T51·T52: 문서 버전 2026-10-30.2 — 바뀐 내용을 한 번에 알린다(재동의 한 번)
         <p className="mt-3 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          이번에 바뀐 내용: <Link href="/terms#copyright" target="_blank" className="font-semibold underline">이용약관</Link> 제6조 데이터 이용 조건과
-          AI 상담 이용 한도, <Link href="/privacy#items" target="_blank" className="font-semibold underline">개인정보 처리방침</Link>의 IP 주소 일시 처리·방문자 쿠키·AI 상담
+          이번에 바뀐 내용: <Link prefetch={false} href="/terms#copyright" target="_blank" className="font-semibold underline">이용약관</Link> 제6조 데이터 이용 조건과
+          AI 상담 이용 한도, <Link prefetch={false} href="/privacy#items" target="_blank" className="font-semibold underline">개인정보 처리방침</Link>의 IP 주소 일시 처리·방문자 쿠키·AI 상담
           이용 횟수 쿠키·접속 국가 통계.
         </p>
       )}
@@ -136,7 +136,7 @@ function ConsentContent() {
 
       <p className="mt-3 text-xs text-gray-500">
         필수 항목에 동의하지 않으면 가입되지 않지만, 로그인 없이 모든 기능을 그대로 쓸 수 있습니다. 자세한 내용은{" "}
-        <Link href="/privacy" target="_blank" className="font-semibold underline">개인정보 처리방침</Link>을 보세요.
+        <Link prefetch={false} href="/privacy" target="_blank" className="font-semibold underline">개인정보 처리방침</Link>을 보세요.
       </p>
       {error && <p className="mt-3 rounded-lg bg-rose-50 px-4 py-2 text-sm text-rose-700">{error}</p>}
       <div className="mt-5 flex gap-2">
@@ -148,7 +148,7 @@ function ConsentContent() {
         >
           {busy ? "가입 중…" : "동의하고 가입"}
         </button>
-        <Link href="/" className="rounded-lg border border-gray-300 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50">
+        <Link prefetch={false} href="/" className="rounded-lg border border-gray-300 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50">
           취소
         </Link>
       </div>

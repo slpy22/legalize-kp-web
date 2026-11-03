@@ -118,6 +118,7 @@ export default async function Home() {
           <nav aria-label="주요 기능 바로가기" className="mt-6 flex flex-wrap justify-center gap-2">
             {STRENGTHS.map((s) => (
               <Link
+                prefetch={false}
                 key={s.id}
                 href={s.href}
                 className="rounded-full border border-white/30 bg-white/10 px-3.5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/20"
@@ -133,15 +134,15 @@ export default async function Home() {
       <section className="mx-auto max-w-6xl px-4 py-10 sm:py-14">
         <p className="text-sm leading-relaxed text-gray-600 sm:text-base">
           북한 법령 검색과 함께{" "}
-          <Link href="/diff" className="font-semibold text-navy-light hover:underline">판본 신구비교</Link>(AI 변화 리포트),{" "}
-          <Link href="/chat" className="font-semibold text-navy-light hover:underline">AI 상담</Link>,{" "}
-          <Link href="/compare" className="font-semibold text-navy-light hover:underline">남북 법률 비교</Link>,{" "}
-          <Link href="/compare/terms" className="font-semibold text-navy-light hover:underline">법용어 비교</Link>를 쓸 수 있습니다.
+          <Link prefetch={false} href="/diff" className="font-semibold text-navy-light hover:underline">판본 신구비교</Link>(AI 변화 리포트),{" "}
+          <Link prefetch={false} href="/chat" className="font-semibold text-navy-light hover:underline">AI 상담</Link>,{" "}
+          <Link prefetch={false} href="/compare" className="font-semibold text-navy-light hover:underline">남북 법률 비교</Link>,{" "}
+          <Link prefetch={false} href="/compare/terms" className="font-semibold text-navy-light hover:underline">법용어 비교</Link>를 쓸 수 있습니다.
         </p>
         <div className="mt-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
           <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="text-lg font-bold text-gray-900 sm:text-xl">연도별 제정·개정</h2>
-            <Link href="/stats" className="text-sm font-medium text-navy-light hover:underline">통계 더 보기 →</Link>
+            <Link prefetch={false} href="/stats" className="text-sm font-medium text-navy-light hover:underline">통계 더 보기 →</Link>
           </div>
           {yearly ? (
             <>
@@ -151,7 +152,7 @@ export default async function Home() {
           ) : (
             <p className="rounded-lg bg-gray-50 px-4 py-3 text-sm text-gray-500">
               연도별 통계를 모으는 중입니다.{" "}
-              <Link href="/stats" className="font-medium text-navy-light hover:underline">통계 화면</Link>에서 잠시 뒤 볼 수 있습니다.
+              <Link prefetch={false} href="/stats" className="font-medium text-navy-light hover:underline">통계 화면</Link>에서 잠시 뒤 볼 수 있습니다.
             </p>
           )}
         </div>
@@ -169,7 +170,7 @@ export default async function Home() {
           <ol>
             {popular.laws.map((l, i) => (
               <li key={l.name} className="border-b border-gray-100 last:border-0">
-                <Link href={`/law/${encodeURIComponent(l.name)}`} className="flex items-center gap-3 py-2 text-sm hover:text-navy-light">
+                <Link prefetch={false} href={`/law/${encodeURIComponent(l.name)}`} className="flex items-center gap-3 py-2 text-sm hover:text-navy-light">
                   <span className="w-5 shrink-0 text-right font-semibold text-navy-light">{i + 1}</span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-medium text-gray-800">{l.name}</span>
@@ -192,7 +193,7 @@ export default async function Home() {
             <ul>
               {recent.map((l) => (
                 <li key={l.id} className="border-b border-gray-100 last:border-0">
-                  <Link href={`/law/${encodeURIComponent(l.name)}`} className="flex items-center gap-3 py-2 text-sm hover:text-navy-light">
+                  <Link prefetch={false} href={`/law/${encodeURIComponent(l.name)}`} className="flex items-center gap-3 py-2 text-sm hover:text-navy-light">
                     <time className="w-24 shrink-0 tabular-nums text-gray-500">{l.latest_version_date}</time>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-medium text-gray-800">{l.name}</span>
@@ -216,7 +217,7 @@ export default async function Home() {
               <li key={a.who} className="flex flex-col rounded-lg border border-gray-200 bg-white p-4">
                 <p className="text-sm font-bold text-navy">{a.who}</p>
                 <p className="mt-1 flex-1 text-sm text-gray-600">{a.task}</p>
-                <Link href={a.href} className="mt-3 text-sm font-medium text-navy-light hover:underline">{a.label} →</Link>
+                <Link prefetch={false} href={a.href} className="mt-3 text-sm font-medium text-navy-light hover:underline">{a.label} →</Link>
               </li>
             ))}
           </ul>
@@ -228,12 +229,13 @@ export default async function Home() {
         <section className="mx-auto max-w-6xl px-4 py-10">
           <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="text-lg font-bold text-gray-900">분야별 법령</h2>
-            <Link href="/search" className="text-sm font-medium text-navy-light hover:underline">법령 찾기에서 전체 보기 →</Link>
+            <Link prefetch={false} href="/search" className="text-sm font-medium text-navy-light hover:underline">법령 찾기에서 전체 보기 →</Link>
           </div>
           <ul className="flex flex-wrap gap-2">
             {categories.map((cat) => (
               <li key={cat.category}>
                 <Link
+                  prefetch={false}
                   href={`/category/${encodeURIComponent(cat.category)}`}
                   className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 transition-colors hover:border-navy-light hover:text-navy-light"
                 >

@@ -243,7 +243,7 @@ function DiffContent() {
   return (
     <section className="mx-auto max-w-6xl px-4 py-8">
       <nav className="mb-6 text-sm text-gray-500">
-        <Link href="/" className="hover:text-navy-light">
+        <Link prefetch={false} href="/" className="hover:text-navy-light">
           홈
         </Link>
         <span className="mx-2">/</span>
@@ -254,6 +254,7 @@ function DiffContent() {
           return (
             <>
               <Link
+                prefetch={false}
                 href={`/law/${encodeURIComponent(crumb)}`}
                 className="hover:text-navy-light"
               >
@@ -354,6 +355,7 @@ function DiffContent() {
           <div className="mt-2 flex flex-wrap gap-2">
             {DIFF_QUICK_PICKS.map((q) => (
               <Link
+                prefetch={false}
                 key={q.label}
                 href={diffHref(q.name, q.date1, q.date2)}
                 className="rounded-full border border-navy-light/40 bg-navy-light/5 px-3.5 py-1.5 text-sm font-medium text-navy transition-colors hover:bg-navy-light hover:text-white"
@@ -369,7 +371,7 @@ function DiffContent() {
         <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-700">
           {/* T54: 본문 미확보 법령은 판본 자체가 없다 */}
           {lawIndex.find((e) => e.n === name.trim())?.t
-            ? <>본문 미확보 법령이라 비교할 판본이 없습니다. <Link href={`/law/${encodeURIComponent(name.trim())}/history`} className="underline">알려진 개정 이력 보기</Link></>
+            ? <>본문 미확보 법령이라 비교할 판본이 없습니다. <Link prefetch={false} href={`/law/${encodeURIComponent(name.trim())}/history`} className="underline">알려진 개정 이력 보기</Link></>
             : "본문이 적재된 버전이 2건 미만이라 비교할 수 없습니다."}
         </p>
       )}

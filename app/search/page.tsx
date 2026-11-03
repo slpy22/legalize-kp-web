@@ -30,6 +30,7 @@ function Browse() {
         <div className="flex flex-wrap gap-2">
           {SEARCH_EXAMPLES.map((w) => (
             <Link
+              prefetch={false}
               key={w}
               href={`/search?q=${encodeURIComponent(w)}&mode=hybrid`}
               className="rounded-full border border-gray-200 bg-white px-3.5 py-1.5 text-sm text-gray-700 transition-colors hover:border-navy-light hover:text-navy-light"
@@ -47,6 +48,7 @@ function Browse() {
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {categories.map((cat) => (
             <Link
+              prefetch={false}
               key={cat.category}
               href={`/category/${encodeURIComponent(cat.category)}`}
               className="group flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm transition-shadow hover:shadow-md"
@@ -138,6 +140,7 @@ function SearchResults() {
             <div className="space-y-4">
               {results.map((r) => (
                 <Link
+                  prefetch={false}
                   key={r.law_name}
                   href={`/law/${encodeURIComponent(r.law_name)}`}
                   className="group block rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-all hover:border-navy-light hover:shadow-md"

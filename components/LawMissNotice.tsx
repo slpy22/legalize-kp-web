@@ -45,14 +45,14 @@ export default function LawMissNotice() {
         </p>
         <div className="flex flex-wrap gap-3 text-sm">
           {name && (
-            <Link href={`/search?q=${encodeURIComponent(name)}`} className="rounded-lg bg-navy px-4 py-2 font-semibold text-white hover:bg-navy-light">
+            <Link prefetch={false} href={`/search?q=${encodeURIComponent(name)}`} className="rounded-lg bg-navy px-4 py-2 font-semibold text-white hover:bg-navy-light">
               ‘{name}’ 검색
             </Link>
           )}
-          <Link href="/law-index" className="rounded-lg border border-navy-light px-4 py-2 font-medium text-navy-light hover:bg-navy-light hover:text-white">
+          <Link prefetch={false} href="/law-index" className="rounded-lg border border-navy-light px-4 py-2 font-medium text-navy-light hover:bg-navy-light hover:text-white">
             법령 색인
           </Link>
-          <Link href="/" className="rounded-lg border border-gray-300 px-4 py-2 font-medium text-gray-700 hover:bg-gray-100">
+          <Link prefetch={false} href="/" className="rounded-lg border border-gray-300 px-4 py-2 font-medium text-gray-700 hover:bg-gray-100">
             홈
           </Link>
         </div>
@@ -69,7 +69,7 @@ export default function LawMissNotice() {
       <a href={lawHref} className="rounded-lg bg-navy px-4 py-2 font-semibold text-white hover:bg-navy-light">
         {list.length ? "현행본 보기" : "법령 정보"}
       </a>
-      <Link href={`${lawHref}/history`} className="rounded-lg border border-navy-light px-4 py-2 font-medium text-navy-light hover:bg-navy-light hover:text-white">
+      <Link prefetch={false} href={`${lawHref}/history`} className="rounded-lg border border-navy-light px-4 py-2 font-medium text-navy-light hover:bg-navy-light hover:text-white">
         개정이력
       </Link>
     </div>
@@ -78,7 +78,7 @@ export default function LawMissNotice() {
   return (
     <section className="mx-auto max-w-3xl px-4 py-12">
       <nav className="mb-6 text-sm text-gray-500">
-        <Link href="/" className="hover:text-navy-light">홈</Link>
+        <Link prefetch={false} href="/" className="hover:text-navy-light">홈</Link>
         <span className="mx-2">/</span>
         <a href={lawHref} className="hover:text-navy-light">{name}</a>
       </nav>

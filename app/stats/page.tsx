@@ -41,7 +41,7 @@ export default async function StatsPage() {
   return (
     <section className="mx-auto max-w-5xl px-4 py-8">
       <nav className="mb-6 text-sm text-gray-500">
-        <Link href="/" className="hover:text-navy-light">
+        <Link prefetch={false} href="/" className="hover:text-navy-light">
           홈
         </Link>
         <span className="mx-2">/</span>
@@ -84,6 +84,7 @@ export default async function StatsPage() {
             <div key={cat.category}>
               <div className="mb-1 flex items-center justify-between text-sm">
                 <Link
+                  prefetch={false}
                   href={`/category/${encodeURIComponent(cat.category)}`}
                   className="font-medium text-gray-700 hover:text-navy-light"
                 >

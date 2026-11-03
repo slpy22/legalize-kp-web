@@ -53,8 +53,8 @@ function LoginContent() {
       </a>
       <p className="mt-6 text-xs leading-relaxed text-gray-500">
         처음 로그인하면 동의 화면이 나옵니다. 동의하기 전에는 아무 정보도 저장하지 않습니다. 자세한 내용은{" "}
-        <Link href="/privacy" className="font-semibold underline">개인정보 처리방침</Link>과{" "}
-        <Link href="/terms" className="underline">이용약관</Link>을 보세요.
+        <Link prefetch={false} href="/privacy" className="font-semibold underline">개인정보 처리방침</Link>과{" "}
+        <Link prefetch={false} href="/terms" className="underline">이용약관</Link>을 보세요.
       </p>
     </section>
   );

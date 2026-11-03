@@ -17,7 +17,7 @@ export default async function CategoryPage({
     <section className="mx-auto max-w-6xl px-4 py-8">
       {/* 브레드크럼 */}
       <nav className="mb-6 text-sm text-gray-500">
-        <Link href="/" className="hover:text-navy-light">
+        <Link prefetch={false} href="/" className="hover:text-navy-light">
           홈
         </Link>
         <span className="mx-2">/</span>

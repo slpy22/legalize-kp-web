@@ -45,7 +45,7 @@ export default function AuthMenu({ variant, onNavigate }: { variant: "desktop" |
   return (
     <>
       {links.map((l) => (
-        <Link key={l.href} href={l.href} onClick={onNavigate} className={`${base} text-white/80`}>
+        <Link prefetch={false} key={l.href} href={l.href} onClick={onNavigate} className={`${base} text-white/80`}>
           {l.label}
         </Link>
       ))}

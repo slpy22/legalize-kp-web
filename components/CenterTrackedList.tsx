@@ -29,7 +29,7 @@ export default function CenterTrackedList({ items }: { items: CenterTracked[] })
       <p className="mt-1 text-sm text-gray-500">
         공식 공개 자료에 없거나 일자가 다른 개정을 센터가 로동신문 등 북한 매체와 북한 법학 논문(김일성종합대학 학보 등)으로 추적한 기록입니다.
         근거 자료를 함께 밝히며, 확실성을 <strong>확인</strong>·<strong>추정</strong>으로 나눕니다.{" "}
-        <Link href="/about/data" className="text-navy-light hover:underline">데이터와 권리 안내</Link>
+        <Link prefetch={false} href="/about/data" className="text-navy-light hover:underline">데이터와 권리 안내</Link>
       </p>
       {items.length === 0 ? (
         <p className="mt-4 rounded-lg bg-gray-50 px-4 py-3 text-sm text-gray-500">이 법령에는 센터가 따로 추적한 개정 이력이 없습니다.</p>

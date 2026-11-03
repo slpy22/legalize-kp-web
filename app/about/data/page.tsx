@@ -30,7 +30,7 @@ export default function DataRightsPage() {
   return (
     <section className="mx-auto max-w-3xl px-4 py-8">
       <nav className="mb-6 text-sm text-gray-500">
-        <Link href="/" className="hover:text-navy-light">홈</Link>
+        <Link prefetch={false} href="/" className="hover:text-navy-light">홈</Link>
         <span className="mx-2">/</span>
         <span className="font-medium text-gray-800">데이터와 권리 안내</span>
       </nav>
@@ -97,7 +97,7 @@ export default function DataRightsPage() {
             <tr><td>상업적 이용</td><td>사전 <strong>협의</strong>가 필요합니다</td></tr>
           </tbody>
         </table>
-        <p>검색엔진(구글·네이버 등)이 공개 화면을 색인하는 것은 허용합니다. 자세한 조건은 <Link href="/terms#copyright">이용약관 제6조</Link>에 따릅니다.</p>
+        <p>검색엔진(구글·네이버 등)이 공개 화면을 색인하는 것은 허용합니다. 자세한 조건은 <Link prefetch={false} href="/terms#copyright">이용약관 제6조</Link>에 따릅니다.</p>
 
         <h2 id="protect">5. 자동 수집 억제</h2>
         <p>

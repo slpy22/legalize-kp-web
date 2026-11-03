@@ -16,7 +16,7 @@ export default function Footer() {
       <div className="mx-auto max-w-6xl px-4 pb-24 pt-6 text-center text-sm lg:pb-6">
         <nav aria-label="바닥글 메뉴" className="mb-3 flex flex-wrap justify-center gap-x-4 gap-y-1 text-white/80">
           {LINKS.map((l) => (
-            <Link key={l.href} href={l.href} className="hover:text-white hover:underline">
+            <Link prefetch={false} key={l.href} href={l.href} className="hover:text-white hover:underline">
               {l.label}
             </Link>
           ))}
@@ -35,12 +35,12 @@ export default function Footer() {
         {/* T43: 개인정보 처리방침은 눈에 띄게(굵게) — 개인정보보호법 제30조 공개 */}
         {/* T51: 한 줄을 넘으면 줄바꿈(예전에는 '권리 안…'에서 잘려 보였다). 링크마다 통째로 넘긴다 */}
         <p className="mt-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs">
-          <Link href="/privacy" className="whitespace-nowrap font-bold text-white/90 hover:underline">개인정보 처리방침</Link>
+          <Link prefetch={false} href="/privacy" className="whitespace-nowrap font-bold text-white/90 hover:underline">개인정보 처리방침</Link>
           <span aria-hidden className="text-white/40">·</span>
-          <Link href="/terms" className="whitespace-nowrap text-white/70 hover:underline">이용약관</Link>
+          <Link prefetch={false} href="/terms" className="whitespace-nowrap text-white/70 hover:underline">이용약관</Link>
           <span aria-hidden className="text-white/40">·</span>
           {/* T50: 바닥글의 '데이터 출처: …' 나열은 /about/data 의 출처 표로 옮겼다 */}
-          <Link href="/about/data#sources" className="whitespace-nowrap text-white/70 hover:underline">데이터 출처·권리 안내</Link>
+          <Link prefetch={false} href="/about/data#sources" className="whitespace-nowrap text-white/70 hover:underline">데이터 출처·권리 안내</Link>
         </p>
         <p className="mt-1 text-xs text-white/40">
           &copy; {new Date().getFullYear()} 통일과 북한법학회 &mdash; 북한법률정보센터 운영 &middot; 연구 목적 제공

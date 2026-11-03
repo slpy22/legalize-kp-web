@@ -98,7 +98,7 @@ function MappingList() {
     <section className="mx-auto max-w-6xl px-4 py-8">
       {/* 브레드크럼 */}
       <nav className="mb-6 text-sm text-gray-500">
-        <Link href="/" className="hover:text-navy-light">홈</Link>
+        <Link prefetch={false} href="/" className="hover:text-navy-light">홈</Link>
         <span className="mx-2">/</span>
         <span className="font-medium text-gray-800">남북비교</span>
       </nav>
@@ -107,6 +107,7 @@ function MappingList() {
         <h1 className="text-2xl font-bold text-gray-800">남북 법률 비교</h1>
         <div className="flex gap-3">
           <Link
+            prefetch={false}
             href="/compare/terms"
             className="rounded-lg border border-navy-light px-4 py-2 text-sm font-medium text-navy-light transition-colors hover:bg-navy-light hover:text-white"
           >
@@ -127,6 +128,7 @@ function MappingList() {
           <span className="text-sm font-semibold text-gray-800">대표 사례</span>
           {COMPARE_QUICK_PICKS.map((n) => (
             <Link
+              prefetch={false}
               key={n}
               href={`/compare/${encodeURIComponent(n)}`}
               className="rounded-full border border-navy-light/40 bg-navy-light/5 px-3 py-1 text-sm font-medium text-navy transition-colors hover:bg-navy-light hover:text-white"
@@ -210,6 +212,7 @@ function MappingList() {
                     >
                       <td className="px-3 py-3 sm:px-4">
                         <Link
+                          prefetch={false}
                           href={`/compare/${encodeURIComponent(row.kp_name)}`}
                           className="font-medium text-navy hover:underline"
                         >
