@@ -12,7 +12,7 @@ type Group = "search" | "renderer" | "impostor" | "tool" | "suspicious" | "inter
 
 const GROUPS: { key: Group; label: string; counted: boolean; cls: string }[] = [
   { key: "search", label: "검색엔진(확인됨)", counted: false, cls: "bg-sky-50 text-sky-800" },
-  { key: "renderer", label: "검색엔진 렌더러", counted: false, cls: "bg-violet-50 text-violet-800" },
+  { key: "renderer", label: "검색엔진·AI 렌더러", counted: false, cls: "bg-violet-50 text-violet-800" },
   { key: "impostor", label: "사칭·확인 실패", counted: false, cls: "bg-rose-50 text-rose-800" },
   { key: "tool", label: "수집 도구", counted: false, cls: "bg-amber-50 text-amber-800" },
   { key: "suspicious", label: "의심(방문자에 포함)", counted: true, cls: "bg-gray-100 text-gray-700" },
@@ -22,12 +22,15 @@ const GROUPS: { key: Group; label: string; counted: boolean; cls: string }[] = [
 const ENGINE: Record<string, string> = {
   baidu: "바이두", google: "구글", bing: "빙", naver: "네이버", yandex: "얀덱스", daum: "다음", apple: "애플",
   sogou: "소우거우", petal: "페탈(화웨이)", amazon: "아마존",
+  keenable: "Keenable(AI 검색)", reflectionbot: "Reflection(AI 검색)",   // T93: AI 검색 에이전트(UA + 운영자 대역으로 확인)
 };
 const REASON: Record<string, string> = {
   headless: "헤드리스 브라우저 표지(sec-ch-ua)",
   old_chrome_first: "오래된 Chrome(110 미만) + 방문자 쿠키 없는 첫 요청",
   no_accept_language: "언어 헤더(Accept-Language) 없음",
   rdns_mismatch: "역DNS 는 수집기 이름인데 정방향 주소가 다름",
+  forged_ua: "있을 수 없는 UA(새 Chrome + 옛 Edge 표지)",
+  forged_ua_dc: "데이터센터 + 있을 수 없는 UA(새 Chrome + 옛 Edge 표지)",
   lan: "내부망(LAN — 공유기 경유)",
   admin: "관리자 계정 로그인",
   device: "운영자 기기(이 브라우저 집계 제외)",
@@ -39,17 +42,18 @@ type Row = { day: string; kind: string; name: string; hits: number };
 /** bot_days 한 줄 → (묶음, 화면 이름) */
 function groupOf(r: { kind: string; name: string }): [Group, string] {
   if (r.kind === "renderer") {
-    const f = r.name.match(/^(.*)\(뒤따름\)$/);          // T88: 수집기 직후 같은 엔진 대역에서 온 렌더러 요청(역DNS 없음)
-    return ["renderer", f ? `${ENGINE[f[1]] ?? f[1]}(수집 직후·역DNS 없음)` : ENGINE[r.name] ?? r.name];
+    // T88·T93: 확인된 수집기 직후 같은 운영자 대역에서 온 렌더러 요청(T93 부터는 같은 경로를 연 브라우저도)
+    const f = r.name.match(/^(.*)\(뒤따름\)$/);
+    return ["renderer", f ? `${ENGINE[f[1]] ?? f[1]}(수집 직후 뒤따름)` : ENGINE[r.name] ?? r.name];
   }
   if (r.kind === "search_bot") {
     const m = r.name.match(/^(.*)\(렌더러\)$/);          // 스키마 적용 전 대체 기록
-    return m ? ["renderer", ENGINE[m[1]] ?? m[1]] : ["search", r.name];
+    return m ? ["renderer", ENGINE[m[1]] ?? m[1]] : ["search", ENGINE[r.name] ?? r.name];
   }
   if (r.kind === "suspicious") return ["suspicious", REASON[r.name] ?? r.name];
   if (r.kind === "internal") return ["internal", REASON[r.name] ?? r.name];
   if (/\((사칭|확인 실패)\)$/.test(r.name)) return ["impostor", r.name];
-  return ["tool", r.name];
+  return ["tool", REASON[r.name] ?? r.name];
 }
 
 export default function ClassifyStats({ v, days, status }: {

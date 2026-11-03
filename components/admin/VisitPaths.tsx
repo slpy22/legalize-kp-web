@@ -2,12 +2,14 @@
 
 import { Fragment, useEffect, useState } from "react";
 import { adminVisit, adminVisits, type AdminVisitEvent, type AdminVisits } from "@/lib/account";
+import { decPath } from "./decPath";
 
 /**
  * T89: 방문(탭) 단위 열람 순서·페이지별 머문 시간 — 관리자 이용현황.
  * 방문은 브라우저 탭 하나의 임시 방문 ID 로 묶은 기록이다(탭을 닫으면 사라짐, 방문자 쿠키·회원·IP 와 잇지 않음).
  * 머문 시간은 페이지가 화면에 보이는 상태로 있던 시간만(숨긴 탭 시간은 뺌, 한 페이지 최대 60분). 검색어는 보이지 않는다.
  * T91: 열람 순서는 화면(page) 기준 — 법령 조회(law_view)는 따로 줄을 만들지 않고 그 화면 줄에 표시한다. 유입 경로(첫 페이지의 출처) 칸·거르기.
+ * T93: 페이지 주소는 글자로 풀어 보인다(decPath — 잘못된 인코딩은 원문 그대로).
  */
 const DEVICE: Record<string, string> = { mobile: "모바일", tablet: "태블릿", pc: "PC", unknown: "알 수 없음", none: "기록 전" };
 export const SRC: Record<string, string> = {
@@ -40,14 +42,7 @@ function lines(ev: AdminVisitEvent[]): Line[] {
   const pages = out.filter((e) => e.kind === "page");
   for (const e of ev) {
     if (e.kind !== "law_view") continue;
-    const dec = (x: string | null) => {
-      try {
-        return decodeURIComponent(x ?? "");
-      } catch {
-        return x ?? "";
-      }
-    };
-    const same = pages.filter((p) => e.law && dec(p.path) === `/law/${e.law}`);
+    const same = pages.filter((p) => e.law && decPath(p.path) === `/law/${e.law}`);
     const pool = same.length ? same : pages;
     if (!pool.length) {
       out.push({ ...e, laws: [] });       // 화면 기록이 없는 법령 조회(드묾)는 따로 한 줄
@@ -188,7 +183,7 @@ export default function VisitPaths() {
                                   <span className="w-16 shrink-0 tabular-nums text-gray-500">{hm(e.ts)}</span>
                                   <span className="w-16 shrink-0">{KIND[e.kind] ?? e.kind}</span>
                                   <span className="min-w-0 flex-1 break-all">
-                                    {e.kind === "page" ? e.path : e.law ?? (e.kind === "search" ? "(검색어는 보이지 않음)" : "")}
+                                    {e.kind === "page" ? decPath(e.path) : e.law ?? (e.kind === "search" ? "(검색어는 보이지 않음)" : "")}
                                     {e.laws.length > 0 && (
                                       <span className="ml-2 whitespace-nowrap rounded bg-blue-50 px-1.5 py-0.5 text-[11px] text-blue-800" title={e.laws.join(", ")}>
                                         법령 조회{e.laws.length > 1 ? ` ${e.laws.length}` : ""}

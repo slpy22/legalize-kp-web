@@ -16,17 +16,22 @@ const BAD_UA =
 // 다음 앱(DaumApps) 사용자를 봇으로 알리지 않는다. 이 표지는 usage/bot 으로 알리는 데만 쓰고 차단·방문자 수에는 쓰지 않는다.
 const SEARCH_UA =
   /googlebot|google-inspectiontool|googleother|adsbot-google|mediapartners-google|storebot-google|\byeti\b|bingbot|adidxbot|bingpreview|\bdaum\/|daumoa|baiduspider|yandex\w*bot|yandeximages|applebot|sogou \w+ spider/i;
+// T93: AI 검색 에이전트(질문을 받아 페이지를 가져가는 수집기 — 차단하지 않는다). 백엔드 분류기(app/usage/classify.py AGENT_UA)와 같은 이름들.
+// 이 표지도 usage/bot 으로 알리는 데만 쓴다. 백엔드는 이 수집기가 받은 경로를 잠깐 기억해, 곧바로 같은 경로를 같은 운영자 대역에서 연
+// 브라우저(화면 JS 를 실행하는 렌더러)를 봇으로 뺀다.
+const AGENT_UA = /keenable-user|reflectionbot/i;
 const INTERNAL_API = process.env.INTERNAL_API_URL || "";
 
 /** 봇 화면 요청을 백엔드에 알린다(T52 — 방문자 수와 따로 셈). 기다리지 않고, 실패해도 화면에 영향이 없다.
  * T90: 점검 접속 표시 헤더(X-Nklaw-Test)가 있으면 그 값을 그대로 넘긴다 — 맞는지는 백엔드가 가린다(맞으면 봇 분류 대신 내부 점검 접속).
- * 값은 로그·응답에 쓰지 않는다. */
-function reportBot(ua: string, ip: string, test: string | null) {
+ * 값은 로그·응답에 쓰지 않는다.
+ * T93: 받은 경로(pathname — query 는 보내지 않음)를 함께 넘긴다(렌더러 뒤따름 판정의 '같은 경로' 확인용). */
+function reportBot(ua: string, ip: string, test: string | null, path: string) {
   if (!INTERNAL_API) return;
   void fetch(`${INTERNAL_API}/api/v1/usage/bot`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ ua: ua.slice(0, 400), ip, ...(test ? { test: test.slice(0, 200) } : {}) }),
+    body: JSON.stringify({ ua: ua.slice(0, 400), ip, path: path.slice(0, 300), ...(test ? { test: test.slice(0, 200) } : {}) }),
   }).catch(() => {});
 }
 
@@ -35,7 +40,7 @@ export function proxy(request: NextRequest) {
   if (!ip) return NextResponse.next();
   const ua = request.headers.get("user-agent") || "";
   const bad = !ua.trim() || BAD_UA.test(ua);
-  if (bad || SEARCH_UA.test(ua)) reportBot(ua, ip, request.headers.get("x-nklaw-test"));
+  if (bad || SEARCH_UA.test(ua) || AGENT_UA.test(ua)) reportBot(ua, ip, request.headers.get("x-nklaw-test"), request.nextUrl.pathname);
   if (!bad) return NextResponse.next();
   return new NextResponse(
     "자동 수집 도구로 보이는 접근은 허용하지 않습니다. 이용 조건: https://www.nk-law.kr/about/data\n" +
