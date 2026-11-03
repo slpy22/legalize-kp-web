@@ -8,12 +8,14 @@ import type { AdminUsage, AdminVisitors } from "@/lib/account";
  * 사람으로 세되 보조 신호가 있던 페이지 기록(의심)을 사유별로 보인다. 집계만 보인다(IP 는 저장하지 않음).
  * 판정 기준은 백엔드 app/usage/classify.py.
  */
-type Group = "search" | "renderer" | "impostor" | "tool" | "suspicious" | "internal";
+type Group = "search" | "renderer" | "impostor" | "datacenter" | "tool" | "suspicious" | "internal";
 
 const GROUPS: { key: Group; label: string; counted: boolean; cls: string }[] = [
   { key: "search", label: "검색엔진(확인됨)", counted: false, cls: "bg-sky-50 text-sky-800" },
-  { key: "renderer", label: "검색엔진·AI 렌더러", counted: false, cls: "bg-violet-50 text-violet-800" },
+  { key: "renderer", label: "검색엔진·AI·앱 렌더러", counted: false, cls: "bg-violet-50 text-violet-800" },
   { key: "impostor", label: "사칭·확인 실패", counted: false, cls: "bg-rose-50 text-rose-800" },
+  // T95: 데이터센터(클라우드·호스팅)에서 온 봇 — 있을 수 없는 UA, 방문이 끝난 뒤 정산한 단발 방문
+  { key: "datacenter", label: "데이터센터 봇", counted: false, cls: "bg-orange-50 text-orange-800" },
   { key: "tool", label: "수집 도구", counted: false, cls: "bg-amber-50 text-amber-800" },
   { key: "suspicious", label: "의심(방문자에 포함)", counted: true, cls: "bg-gray-100 text-gray-700" },
   { key: "internal", label: "내부 접속", counted: false, cls: "bg-emerald-50 text-emerald-800" },
@@ -24,6 +26,8 @@ const ENGINE: Record<string, string> = {
   sogou: "소우거우", petal: "페탈(화웨이)", amazon: "아마존",
   keenable: "Keenable(AI 검색)", reflectionbot: "Reflection(AI 검색)",   // T93: AI 검색 에이전트(UA + 운영자 대역으로 확인)
 };
+// T95: 앱 안 브라우저(웹뷰) — 데이터센터에서 온 것만 앱 서버의 링크 미리보기 렌더러로 뺀다
+const APP: Record<string, string> = { bytedance: "더우인·틱톡 등 바이트댄스 앱" };
 const REASON: Record<string, string> = {
   headless: "헤드리스 브라우저 표지(sec-ch-ua)",
   old_chrome_first: "오래된 Chrome(110 미만) + 방문자 쿠키 없는 첫 요청",
@@ -31,6 +35,7 @@ const REASON: Record<string, string> = {
   rdns_mismatch: "역DNS 는 수집기 이름인데 정방향 주소가 다름",
   forged_ua: "있을 수 없는 UA(새 Chrome + 옛 Edge 표지)",
   forged_ua_dc: "데이터센터 + 있을 수 없는 UA(새 Chrome + 옛 Edge 표지)",
+  dc_bounce: "데이터센터 단발 방문(유입 정보 없음 · 한 페이지 · 머문 시간 없음 또는 30초 미만 — 방문이 끝난 뒤 정산)",
   lan: "내부망(LAN — 공유기 경유)",
   admin: "관리자 계정 로그인",
   device: "운영자 기기(이 브라우저 집계 제외)",
@@ -44,7 +49,9 @@ function groupOf(r: { kind: string; name: string }): [Group, string] {
   if (r.kind === "renderer") {
     // T88·T93: 확인된 수집기 직후 같은 운영자 대역에서 온 렌더러 요청(T93 부터는 같은 경로를 연 브라우저도)
     const f = r.name.match(/^(.*)\(뒤따름\)$/);
-    return ["renderer", f ? `${ENGINE[f[1]] ?? f[1]}(수집 직후 뒤따름)` : ENGINE[r.name] ?? r.name];
+    if (f) return ["renderer", `${ENGINE[f[1]] ?? f[1]}(수집 직후 뒤따름)`];
+    const a = r.name.match(/^(.*)\(앱 미리보기\)$/);          // T95: 데이터센터 + 앱 웹뷰
+    return ["renderer", a ? `${APP[a[1]] ?? a[1]}(앱 미리보기, 데이터센터)` : ENGINE[r.name] ?? r.name];
   }
   if (r.kind === "search_bot") {
     const m = r.name.match(/^(.*)\(렌더러\)$/);          // 스키마 적용 전 대체 기록
@@ -53,6 +60,7 @@ function groupOf(r: { kind: string; name: string }): [Group, string] {
   if (r.kind === "suspicious") return ["suspicious", REASON[r.name] ?? r.name];
   if (r.kind === "internal") return ["internal", REASON[r.name] ?? r.name];
   if (/\((사칭|확인 실패)\)$/.test(r.name)) return ["impostor", r.name];
+  if (r.kind === "suspect" && (r.name === "forged_ua_dc" || r.name === "dc_bounce")) return ["datacenter", REASON[r.name]];
   return ["tool", REASON[r.name] ?? r.name];
 }
 
@@ -85,7 +93,7 @@ export default function ClassifyStats({ v, days, status }: {
     const m = new Map<string, Record<Group, number>>();
     for (const r of rows) {
       const [group] = groupOf(r);
-      const d = m.get(r.day) ?? { search: 0, renderer: 0, impostor: 0, tool: 0, suspicious: 0, internal: 0 };
+      const d = m.get(r.day) ?? { search: 0, renderer: 0, impostor: 0, datacenter: 0, tool: 0, suspicious: 0, internal: 0 };
       d[group] += r.hits;
       m.set(r.day, d);
     }
@@ -103,6 +111,8 @@ export default function ClassifyStats({ v, days, status }: {
       <p className="mt-1 text-xs text-gray-500">
         &lsquo;의심&rsquo;만 방문자 수에 들어가고(보조 신호가 있었을 뿐 사람일 수 있음), 나머지는 방문자 수·이용 기록에서 뺀 요청입니다.
         검색엔진 렌더러는 사람 브라우저처럼 보이지만 접속 주소의 역DNS·정방향 확인 결과가 검색엔진 수집기인 경우입니다.
+        데이터센터 봇의 &lsquo;단발 방문&rsquo;은 데이터센터에서 유입 정보 없이 한 페이지만 잠깐 연 방문으로, 방문이 끝나고 약 70분 뒤 정산해 뺍니다
+        (검색·링크로 왔거나, 다른 페이지로 옮겼거나, 30초 넘게 머문 방문은 업무 VPN·해외 접속 이용자일 수 있어 사람으로 둡니다).
       </p>
       <div className="mt-3 overflow-x-auto rounded-xl border border-gray-200 bg-white">
         <table className="w-full text-sm">
@@ -162,6 +172,8 @@ export default function ClassifyStats({ v, days, status }: {
           (수집기 {status.crawler} · 해당 없음 {status.none} · 위장 {status.mismatch} · 실패 {status.unknown + status.busy}
           {status.timeouts ? ` · 2초 넘김 ${status.timeouts}` : ""}) · 캐시 적중 {status.cache_hits.toLocaleString()}
           {" "}— DNS 가 답하지 않으면 사람 브라우저는 사람으로 셉니다.
+          {typeof (status as { dc_pending?: number }).dc_pending === "number" &&
+            ` · 데이터센터 방문 정산 대기 ${(status as { dc_pending?: number }).dc_pending}`}
         </p>
       )}
     </section>

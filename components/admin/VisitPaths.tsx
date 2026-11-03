@@ -13,7 +13,7 @@ import { decPath } from "./decPath";
  */
 const DEVICE: Record<string, string> = { mobile: "모바일", tablet: "태블릿", pc: "PC", unknown: "알 수 없음", none: "기록 전" };
 export const SRC: Record<string, string> = {
-  ai: "AI 답변", search: "검색", social: "SNS·커뮤니티", other: "다른 사이트", direct: "직접 접속·즐겨찾기", none: "기록 없음",
+  ai: "AI 답변", search: "검색", social: "SNS·커뮤니티", other: "다른 사이트", direct: "유입 정보 없음(주소 입력·즐겨찾기·앱·메신저)", none: "기록 없음",
 };
 const KIND: Record<string, string> = {
   page: "페이지", law_view: "법령 조회", search: "검색", diff: "신구비교", compare: "남북비교", terms: "용어비교", chat: "AI 상담",
