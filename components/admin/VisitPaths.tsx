@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useState } from "react";
 import { adminVisit, adminVisits, type AdminVisitEvent, type AdminVisits } from "@/lib/account";
+import { LawLink, PathLink } from "./AdminLinks";
 import { decPath } from "./decPath";
 
 /**
@@ -12,6 +13,7 @@ import { decPath } from "./decPath";
  * T93: 페이지 주소는 글자로 풀어 보인다(decPath — 잘못된 인코딩은 원문 그대로).
  * T96: 머문 시간 '측정 안 됨'(신호가 오지 않음 — 보이는 상태가 0.5초 미만이었거나 뒤 탭·아직 열림·렌더러)과
  *      측정된 값을 가른다(값 0 은 '1초 미만' — 지금 화면은 0 을 보내지 않지만 API 는 받는다). 방문 합계는 측정된 페이지만 더하고, 일부만 측정됐으면 그 수를 붙인다.
+ * T99: 열람 순서의 경로·법령명은 그 화면으로 가는 링크(새 탭 — AdminLinks). 검색어·query 와 화면이 아닌 경로는 글자만.
  */
 const DEVICE: Record<string, string> = { mobile: "모바일", tablet: "태블릿", pc: "PC", unknown: "알 수 없음", none: "기록 전" };
 export const SRC: Record<string, string> = {
@@ -210,7 +212,7 @@ export default function VisitPaths() {
                                   <span className="w-16 shrink-0 tabular-nums text-gray-500">{hm(e.ts)}</span>
                                   <span className="w-16 shrink-0">{KIND[e.kind] ?? e.kind}</span>
                                   <span className="min-w-0 flex-1 break-all">
-                                    {e.kind === "page" ? decPath(e.path) : e.law ?? (e.kind === "search" ? "(검색어는 보이지 않음)" : "")}
+                                    {e.kind === "page" ? <PathLink path={e.path} /> : e.law ? <LawLink name={e.law} /> : e.kind === "search" ? "(검색어는 보이지 않음)" : ""}
                                     {e.laws.length > 0 && (
                                       <span className="ml-2 whitespace-nowrap rounded bg-blue-50 px-1.5 py-0.5 text-[11px] text-blue-800" title={e.laws.join(", ")}>
                                         법령 조회{e.laws.length > 1 ? ` ${e.laws.length}` : ""}
@@ -240,7 +242,7 @@ export default function VisitPaths() {
         열람 페이지는 화면 수이고, 법령 조회는 그 화면에서 법령 본문을 연 건수입니다(법령 페이지 하나 = 열람 페이지 1 + 법령 조회 1).
         머문 시간은 페이지가 화면에 보이는 동안만 셉니다(한 페이지 최대 60분, 마지막 페이지는 탭을 닫을 때 못 받을 수 있음).
         「측정 안 됨」은 머문 시간 신호가 오지 않은 페이지입니다(보이는 상태로 0.5초를 못 넘김·뒤 탭으로 열고 아직 안 봄·렌더러). 0초와 다르며 합계에 넣지 않습니다.
-        봇·내부 접속은 지금처럼 빠지고, 검색어는 보이지 않습니다.
+        봇·내부 접속은 지금처럼 빠지고, 검색어는 보이지 않습니다. 경로·법령명을 누르면 그 화면이 새 탭으로 열립니다(이 기기는 내부 접속이라 통계에 들어가지 않음).
       </p>
     </div>
   );

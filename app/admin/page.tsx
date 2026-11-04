@@ -8,6 +8,7 @@ import ClassifyStats from "@/components/admin/ClassifyStats";
 import DeviceStats from "@/components/admin/DeviceStats";
 import VisitorStats from "@/components/admin/VisitorStats";
 import VisitPaths from "@/components/admin/VisitPaths";
+import { LawLink } from "@/components/admin/AdminLinks";
 import OpDevice from "@/components/admin/OpDevice";
 import SourceStats from "@/components/admin/SourceStats";
 
@@ -198,7 +199,7 @@ export default function AdminPage() {
             {d.top_laws.map((l, i) => (
               <li key={l.name} className="flex items-center gap-3 px-4 py-2">
                 <span className="w-5 text-right font-semibold text-navy-light">{i + 1}</span>
-                <Link href={`/law/${encodeURIComponent(l.name)}`} className="flex-1 truncate hover:underline">{l.name}</Link>
+                <LawLink name={l.name} className="flex-1 truncate hover:underline" />
                 <span className="tabular-nums text-gray-500">{l.count}</span>
               </li>
             ))}
