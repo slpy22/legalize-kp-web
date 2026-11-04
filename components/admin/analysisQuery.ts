@@ -45,7 +45,7 @@ export const BOT_KIND: Record<string, string> = {
 };
 export const RULE: Record<string, string> = {
   ua: "UA 표지", rdns: "역DNS 확인", impostor: "사칭(역DNS 불일치)", "3b": "렌더러 뒤따름", "3c": "같은 경로 뒤따름",
-  "3d": "위조 UA(데이터센터)", "3e": "앱 웹뷰·미리보기", "3f": "데이터센터 단발(정산)", dc: "데이터센터 대역",
+  "3d": "위조 UA(데이터센터)", "3e": "앱 웹뷰·미리보기", "3f": "데이터센터 단발(정산)", "3g": "자동 열람(정산)", dc: "데이터센터 대역",
   single_short: "단발·짧음", repeat: "같은 묶음 반복", cleanup: "정리 SQL 로 뺌", manual: "수동 판정",
   home_line: "가정·이동통신 회선", dwell: "머문 시간 측정", multi_page: "여러 페이지", external_ref: "바깥 유입", revisit: "재방문",
 };
