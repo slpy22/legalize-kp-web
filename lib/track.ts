@@ -8,6 +8,13 @@
  * 기록을 묶는다. 방문자 쿠키·회원·IP 와 잇지 않는다. GPC 를 켰거나 쿠키를 막은 브라우저는 만들지 않는다.
  * T91: 유입 경로 — 방문(탭)의 첫 페이지 기록에만 직전 사이트의 호스트 이름(전체 주소가 아님)과 주소의 utm_source 값을 붙인다.
  * 서버가 바로 분류해 분류와 호스트 이름만 남긴다. 같은 사이트 안에서 온 것은 보내지 않는다. GPC 면 아무것도 보내지 않는다.
+ * T107: 출처는 '그 문서를 새로 연 첫 페이지 기록'에 붙인다 — 탭의 첫 페이지(seq 1)만이 아니라, 같은 탭에서 바깥 링크로 다시 들어온
+ * 경우(탭의 순번은 이어짐)에도 붙는다. 새로고침·뒤로/앞으로로 다시 연 문서와 사이트 안 이동에는 붙이지 않는다(isLanding).
+ * T107: 사람 조작 없이 화면이 스스로 주소를 바꾼 페이지(예: 비교 대상 지정 주소 → 비교 화면)는 nav:"auto" 표지를 붙인다 —
+ * 서버는 저장하지 않고 데이터센터 단발 방문 정산(규칙 3f)에서 '옮겨 간 페이지'로 세지 않는 데만 쓴다.
+ * T107: 임시 방문 ID 는 탭을 VISIT_IDLE_MS(30분) 넘게 쓰지 않다가 문서를 새로 열면 새로 만든다 — 열어 둔(또는 복원한) 탭을
+ * 다음 날 다시 쓰면 앞 방문의 순번이 이어져 새 방문의 첫 페이지·출처가 빠졌다(2026-11-05 01:02, 11-04 13:19 방문의 같은 탭).
+ * 사이트 안 이동(같은 문서)에서는 바꾸지 않는다 — 한 페이지를 오래 읽고 옮겨 가도 같은 방문이다.
  * 'kind' 는 백엔드 app/usage/repo.py KINDS 와 같다.
  */
 export type TrackKind = "page" | "law_view" | "search" | "diff" | "compare" | "terms" | "chat";
@@ -15,7 +22,35 @@ export type TrackKind = "page" | "law_view" | "search" | "diff" | "compare" | "t
 const API = process.env.NEXT_PUBLIC_API_URL ?? "";
 const TAB_KEY = "nklaw_tab";        // 임시 방문 ID
 const SEQ_KEY = "nklaw_tab_seq";    // 이 탭 안의 페이지 순번
+const AT_KEY = "nklaw_tab_at";      // 이 탭의 마지막 기록 시각(ms) — 방문을 새로 열지 가르는 데만
+export const VISIT_IDLE_MS = 30 * 60 * 1000;
 export const DWELL_MAX = 3600;      // 한 페이지 머문 시간 상한(초) — 서버와 같다
+
+let landingTaken = false;
+let docStarted = false;
+
+function touch(now: number): void {
+  try {
+    sessionStorage.setItem(AT_KEY, String(now));
+  } catch {
+    // 저장소를 못 쓰면 그대로
+  }
+}
+
+/**
+ * T107: 이 문서(전체 로드)를 새로 연 뒤 첫 페이지 기록인가 — 문서마다 처음 한 번만 true.
+ * 새로고침(reload)·뒤로/앞으로(back_forward)로 다시 연 문서는 새 유입이 아니라 false.
+ */
+export function isLanding(): boolean {
+  if (typeof window === "undefined" || landingTaken) return false;
+  landingTaken = true;
+  try {
+    const nav = performance.getEntriesByType?.("navigation")?.[0] as PerformanceNavigationTiming | undefined;
+    return !nav || nav.type === "navigate" || (nav.type as string) === "prerender";
+  } catch {
+    return true;
+  }
+}
 
 function gpc(): boolean {
   return Boolean((navigator as Navigator & { globalPrivacyControl?: boolean }).globalPrivacyControl);
@@ -39,10 +74,22 @@ export function tabVisit(): string | null {
   }
 }
 
-/** 이 탭의 다음 페이지 순번(1부터). 임시 방문 ID 가 없으면 null. */
+/** 이 탭의 다음 페이지 순번(1부터). 임시 방문 ID 가 없으면 null.
+ * T107: 문서의 첫 순번을 받을 때 탭이 VISIT_IDLE_MS 넘게 쉬었으면 임시 방문 ID·순번을 새로 시작한다. */
 export function nextSeq(): number | null {
   if (!tabVisit()) return null;
   try {
+    const now = Date.now();
+    if (!docStarted) {
+      docStarted = true;
+      const at = parseInt(sessionStorage.getItem(AT_KEY) ?? "0", 10) || 0;
+      if (at && now - at > VISIT_IDLE_MS) {
+        sessionStorage.removeItem(TAB_KEY);
+        sessionStorage.removeItem(SEQ_KEY);
+        if (!tabVisit()) return null;
+      }
+    }
+    touch(now);
     const n = (parseInt(sessionStorage.getItem(SEQ_KEY) ?? "0", 10) || 0) + 1;
     if (n > 100_000) return null;
     sessionStorage.setItem(SEQ_KEY, String(n));
@@ -80,7 +127,7 @@ function beacon(url: string, body: string): void {
 
 export function track(
   kind: TrackKind,
-  data: { law?: string; path?: string; query?: string; seq?: number; ref?: string; utm?: string } = {},
+  data: { law?: string; path?: string; query?: string; seq?: number; ref?: string; utm?: string; nav?: "auto" } = {},
 ): void {
   if (typeof window === "undefined") return;
   try {
@@ -89,10 +136,12 @@ export function track(
       return;
     }
     const visit = tabVisit();
-    const { seq, ref, utm, ...rest } = data;
-    // T91: 출처는 이 탭의 첫 페이지(seq 1) 기록에만
-    const src = visit && seq === 1 && kind === "page" && ref !== undefined ? { ref, ...(utm ? { utm } : {}) } : {};
-    const body = JSON.stringify({ kind, ...rest, ...(visit ? { visit, ...(seq ? { seq } : {}), ...src } : {}) });
+    const { seq, ref, utm, nav, ...rest } = data;
+    // T91·T107: 출처는 순번이 있는 페이지 기록에만(부르는 쪽이 문서를 새로 연 첫 기록에만 넘긴다)
+    const src = visit && seq && kind === "page" && ref !== undefined ? { ref, ...(utm ? { utm } : {}) } : {};
+    // T107: 화면 자체 이동 표지 — 두 번째 이후 페이지에만, 출처와 함께 쓰지 않는다
+    const auto = visit && seq && seq >= 2 && kind === "page" && nav === "auto" && ref === undefined ? { nav } : {};
+    const body = JSON.stringify({ kind, ...rest, ...(visit ? { visit, ...(seq ? { seq } : {}), ...src, ...auto } : {}) });
     const url = `${API}/api/v1/usage/event`;
     // 페이지 기록은 응답의 방문자 쿠키를 받아야 하므로 fetch(같은 출처, 쿠키 포함)로 보낸다
     if (kind === "page") {
@@ -111,6 +160,7 @@ export function trackDwell(seq: number, sec: number): void {
   try {
     const visit = tabVisit();
     if (!visit) return;
+    touch(Date.now());
     beacon(`${API}/api/v1/usage/dwell`, JSON.stringify({ visit, seq, sec: Math.min(DWELL_MAX, Math.round(sec)) }));
   } catch {
     // 기록 실패는 무시한다
