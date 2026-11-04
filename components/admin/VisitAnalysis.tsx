@@ -14,6 +14,7 @@ import { SRC } from "./VisitPaths";
  * 저장된 것은 시각(분)·페이지 흐름·머문 시간·단말·나라/지역·기관·유입·판정뿐이다(IP·쿠키·방문자 ID·검색어·브라우저 정보 없음, 13개월 보관).
  * 아래 기간 집계는 3방문 미만 칸을 '(기타)'로 묶은 숫자라 오래 보관하며, 내려받기(CSV)는 이 집계만 된다.
  * 경로·법령명은 T99 링크(새 탭·미리 받기 없음 — AdminLinks).
+ * T102: 기관은 화면 이름(한국 기관은 한글 — KISA 공식 기관명), 저장된 영문 이름은 말풍선.
  */
 const DEVICE: Record<string, string> = { mobile: "모바일", tablet: "태블릿", pc: "PC", unknown: "알 수 없음" };
 const STEP: Record<string, string> = {
@@ -30,6 +31,9 @@ function dur(sec: number | null | undefined): string {
   if (m < 60) return `${m}분 ${sec % 60}초`;
   return `${Math.floor(m / 60)}시간 ${m % 60}분`;
 }
+
+/** T102: API 의 화면 이름(org_label) — 옛 API(T101)면 저장된 이름 */
+const orgLabel = (v: AnalysisVisit) => (v as AnalysisVisit & { org_label?: string | null }).org_label ?? v.org;
 
 function Step({ s }: { s: AnalysisStep }) {
   return (
@@ -163,7 +167,8 @@ export default function VisitAnalysis() {
                       </td>
                       <td className="px-3 py-2">{v.country ?? "—"}{v.region ? ` ${v.region}` : ""}</td>
                       <td className="px-3 py-2">
-                        {v.org ?? "—"}
+                        {/* T102: 화면 이름(한글 기관명 — JSON 의 org_ko 또는 KISA 기관명·통신사 묶음), 저장된 영문 이름은 말풍선 */}
+                        <span title={v.org ?? undefined}>{orgLabel(v) ?? "—"}</span>
                         <div className="text-[11px] text-gray-500">{ORG_KIND[v.org_kind] ?? v.org_kind}{v.asn ? ` · AS${v.asn}` : ""}</div>
                       </td>
                       <td className="px-3 py-2">{DEVICE[v.device] ?? v.device}</td>
