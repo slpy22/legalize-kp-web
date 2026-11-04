@@ -264,6 +264,10 @@ export interface LawResolveCandidate {
   name: string;
   matched_by: string;
   confident?: boolean;
+  /** T98: 화면에 보일 이유(옛이름 「…」 · 남한 「…」에 대응 · 관련 있을 수 있음 등) */
+  reason?: string | null;
+  /** T98: 의미 검색 점수(matched_by=semantic) */
+  score?: number;
 }
 
 export interface LawResolveData {
@@ -273,6 +277,8 @@ export interface LawResolveData {
   matched_by: string | null;
   candidates: LawResolveCandidate[];
   hint: string | null;
+  /** T98: 의미 검색 층 상태(used·cached·skipped:…) — 불렀을 때만 */
+  semantic?: string;
 }
 
 /** 특정 버전 본문 조회 응답 (action=get&version=...) */
