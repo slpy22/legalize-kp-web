@@ -5,10 +5,8 @@ import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { fetchLawResolve, fetchLawVersions } from "@/lib/api";
 import type { LawVersionMeta } from "@/lib/types";
-import {
-  decodeName, isApiError, nearestVersion, objectParticle, othersLead, pickSuggestions, sharedReason, shownReason,
-  type NameSuggestion,
-} from "@/lib/versionMiss";
+import { decodeName, isApiError, nearestVersion, pickSuggestions } from "@/lib/versionMiss";
+import LawSuggestBox, { type LawSuggestions } from "@/components/LawSuggestBox";
 
 /**
  * T77: 없는 법령·없는 판본 일자 주소의 안내(app/law/[name]/not-found.tsx 가 그린다, HTTP 404 · noindex).
@@ -37,7 +35,7 @@ export default function LawMissNotice() {
   }, [name]);
 
   // T97: 법령이 없을 때만 비슷한 이름 후보를 묻는다(자동 이동 없음 — 제안 링크만). 후보가 없으면 화면은 그대로.
-  const [sugg, setSugg] = useState<{ strong: NameSuggestion | null; others: NameSuggestion[] } | null>(null);
+  const [sugg, setSugg] = useState<LawSuggestions | null>(null);
   useEffect(() => {
     let alive = true;
     if (!name || versions !== null) return;
@@ -60,35 +58,8 @@ export default function LawMissNotice() {
           {name ? <>‘{name}’ 이라는 이름의 법령이 없습니다. </> : null}
           이름이 바뀌었거나 다른 표기일 수 있습니다. 검색하거나 법령 찾기의 분야별 목록에서 찾아 보세요.
         </p>
-        {versions === null && hasSugg && sugg && (
-          <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-gray-800" role="status">
-            {sugg.strong && (
-              <p className="text-base">
-                혹시{" "}
-                <Link prefetch={false} href={`/law/${encodeURIComponent(sugg.strong.name)}`} className="font-bold text-navy-light underline hover:text-navy">
-                  「{sugg.strong.name}」
-                </Link>
-                {objectParticle(sugg.strong.name)} 찾으셨나요?
-                {shownReason(sugg.strong) && <span className="ml-1 text-sm text-gray-500">({shownReason(sugg.strong)})</span>}
-              </p>
-            )}
-            {sugg.others.length > 0 && (
-              <p className={sugg.strong ? "mt-2 text-gray-600" : undefined}>
-                {othersLead(sugg.strong, sugg.others)}
-                {sugg.others.map((c, i) => (
-                  <span key={c.name}>
-                    {i > 0 && " · "}
-                    <Link prefetch={false} href={`/law/${encodeURIComponent(c.name)}`} className="font-medium text-navy-light underline hover:text-navy">
-                      「{c.name}」
-                    </Link>
-                    {/* T98: 옛이름·남한 대응·관련 있을 수 있음 — 왜 이 법령을 권하는지 */}
-                    {shownReason(c) && !sharedReason(sugg.others) && <span className="text-xs text-gray-500"> ({shownReason(c)})</span>}
-                  </span>
-                ))}
-              </p>
-            )}
-          </div>
-        )}
+        {/* T97·T98: 비슷한 이름·옛이름·남한 대응·관련 후보(검색·신구비교와 같은 상자, T100) */}
+        {versions === null && hasSugg && <LawSuggestBox sugg={sugg} kind="miss" className="mb-6" />}
         <div className="flex flex-wrap gap-3 text-sm">
           {name && (
             <Link prefetch={false} href={`/search?q=${encodeURIComponent(name)}`} className="rounded-lg bg-navy px-4 py-2 font-semibold text-white hover:bg-navy-light">

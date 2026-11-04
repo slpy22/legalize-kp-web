@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { fetchLawVersions, fetchDiffSemantic, fetchDiffReport } from "@/lib/api";
+import { fetchLawVersions, fetchDiffSemantic, fetchDiffReport, fetchLawResolve } from "@/lib/api";
 import type {
   LawVersionMeta,
   SemanticDiffData,
@@ -16,7 +16,8 @@ import SideBySideDiff from "@/components/SideBySideDiff";
 import LawNameInput, { useLawIndex } from "@/components/LawNameInput";
 import { DIFF_QUICK_PICKS, diffHref } from "@/lib/showcase";
 import { track } from "@/lib/track";
-import { isApiError, nearestVersion } from "@/lib/versionMiss";
+import { isApiError, nearestVersion, pickSuggestions } from "@/lib/versionMiss";
+import LawSuggestBox, { type LawSuggestions } from "@/components/LawSuggestBox";
 
 /** T80: 리포트의 GFM 표는 표만 가로로 스크롤(좁은 화면에서 페이지가 넘치지 않게). */
 const REPORT_MD: Components = {
@@ -53,6 +54,9 @@ function DiffContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [dateNotice, setDateNotice] = useState("");   // T77: 주소의 판본 일자가 없을 때 안내
+  // T100: 없는 법령명이면 404 화면과 같은 이름 후보 — 누르면 입력이 그 법령으로 바뀐다(자동으로 바꾸지 않음)
+  const [nameSugg, setNameSugg] = useState<LawSuggestions | null>(null);
+  const loadRun = useRef(0);                               // 늦게 온 후보가 새 입력의 화면을 덮지 않게
   const [report, setReport] = useState<DiffReportData | null>(null);
   const [reportLoading, setReportLoading] = useState(false);
   // T74: 리포트는 서버가 백그라운드로 만든다(1~2분). 진행 중이면 몇 초마다 같은 요청을 다시 보낸다.
@@ -86,8 +90,10 @@ function DiffContent() {
 
   async function loadVersions(lawName = name, want1 = "", want2 = "") {
     if (!lawName.trim()) return;
+    const run = ++loadRun.current;
     setError("");
     setDateNotice("");
+    setNameSugg(null);
     setLoaded(false);
     setVersions([]);
     setDiff(null);
@@ -97,6 +103,9 @@ function DiffContent() {
       // T77: 없는 법령은 API 가 200 + error 로 답한다 — '판본 2건 미만'이 아니라 법령이 없다고 알린다
       if (isApiError(resp)) {
         setError(`‘${lawName.trim()}’ 법령을 찾을 수 없습니다. 법령명을 다시 확인해 주세요.`);
+        fetchLawResolve(lawName.trim())
+          .then((r) => loadRun.current === run && setNameSugg(pickSuggestions(r, lawName.trim())))
+          .catch(() => undefined);
         return;
       }
       const vs = resp.versions || [];
@@ -377,6 +386,17 @@ function DiffContent() {
       )}
 
       {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
+      {error && (
+        <LawSuggestBox
+          sugg={nameSugg}
+          kind="pick"
+          className="mb-6"
+          onPick={(n) => {
+            setName(n);
+            loadVersions(n);
+          }}
+        />
+      )}
       {dateNotice && !diff && (
         <p className="mb-4 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800" role="status">{dateNotice}</p>
       )}

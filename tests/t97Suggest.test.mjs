@@ -47,7 +47,12 @@ test("LawMissNotice: 후보는 '법령 없음' 갈래에서만 불러오고, 링
   assert.match(src, /if \(!name \|\| versions !== null\) return;/);          // versions === null(법령 없음)일 때만 resolve
   assert.match(src, /versions === null && hasSugg/);
   assert.doesNotMatch(src, /router\.(push|replace)|redirect\(|location\.(href|assign|replace)\s*=/);
-  assert.match(src, /찾으셨나요\?/);
+  // T100: 그리는 상자는 검색·신구비교와 함께 쓰는 LawSuggestBox(kind="miss")
+  assert.match(src, /<LawSuggestBox sugg=\{sugg\} kind="miss"/);
+  const box = readFileSync(new URL("../components/LawSuggestBox.tsx", import.meta.url), "utf8");
+  assert.match(box, /찾으셨나요\?/);
+  assert.match(box, /prefetch=\{false\}/);
+  assert.doesNotMatch(box, /router\.(push|replace)|redirect\(|location\.(href|assign|replace)\s*=/);
 });
 
 test("404 화면은 noindex·HTTP 404 그대로(page 가 notFound, generateMetadata 가 index:false)", () => {

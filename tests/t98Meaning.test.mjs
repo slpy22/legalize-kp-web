@@ -54,9 +54,11 @@ test("의미 후보는 확실 표시가 와도 강조되지 않게 API 가 보�
 });
 
 test("LawMissNotice: 이유를 그리고, 자동 이동은 없다", () => {
-  const src = readFileSync(new URL("../components/LawMissNotice.tsx", import.meta.url), "utf8");
+  // T100: 404·검색·신구비교가 함께 쓰는 LawSuggestBox 가 그린다
+  const src = readFileSync(new URL("../components/LawSuggestBox.tsx", import.meta.url), "utf8")
+    + readFileSync(new URL("../components/LawMissNotice.tsx", import.meta.url), "utf8");
   assert.match(src, /shownReason\(c\)/);
-  assert.match(src, /shownReason\(sugg\.strong\)/);
-  assert.match(src, /othersLead\(sugg\.strong, sugg\.others\)/);
+  assert.match(src, /shownReason\(strong\)/);
+  assert.match(src, /othersLead\(strong, others, generic\)/);
   assert.doesNotMatch(src, /router\.(push|replace)|redirect\(|location\.(href|assign|replace)\s*=/);
 });

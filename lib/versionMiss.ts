@@ -62,13 +62,17 @@ export function pickSuggestions(
   data: {
     resolved?: string | null;
     matched_by?: string | null;
+    reason?: string | null;
     candidates?: { name: string; matched_by: string; confident?: boolean; reason?: string | null }[];
   } | null | undefined,
   asked: string,
 ): { strong: NameSuggestion | null; others: NameSuggestion[] } {
   if (!data || isApiError(data)) return { strong: null, others: [] };
   const all: { name: string; matched_by: string; confident: boolean; reason: string | null }[] = [];
-  if (data.resolved) all.push({ name: data.resolved, matched_by: data.matched_by || "resolved", confident: true, reason: null });
+  // T100: 검색 화면은 이름이 정확히 같은 법령이 있으면(exact) 제안하지 않는다. 별칭으로 해석했으면 그 이유(옛이름 「…」)를 함께.
+  if (data.resolved && data.matched_by !== "exact") {
+    all.push({ name: data.resolved, matched_by: data.matched_by || "resolved", confident: true, reason: data.reason ?? null });
+  }
   for (const c of data.candidates || []) {
     if (c && c.name && c.name !== asked && !all.some((a) => a.name === c.name)) {
       all.push({ name: c.name, matched_by: c.matched_by, confident: !!c.confident, reason: c.reason ?? null });
@@ -83,8 +87,9 @@ export function pickSuggestions(
   return { strong, others };
 }
 
-/** T98: 이유를 화면에 적는 후보 — 옛이름(①)·남한 대응(②)·관련(③). 오타·두음 등 이름이 비슷한 것은 이유 없이. */
-const REASON_SHOWN = new Set(["former_name", "kr_mapping", "semantic"]);
+/** T98: 이유를 화면에 적는 후보 — 옛이름(①)·남한 대응(②)·관련(③). 오타·두음 등 이름이 비슷한 것은 이유 없이.
+ *  T100: alias = 옛이름·다른 이름·약칭으로 바로 해석된 법령(검색 화면) */
+const REASON_SHOWN = new Set(["former_name", "alias", "kr_mapping", "semantic"]);
 
 export function shownReason(s: NameSuggestion): string | null {
   return REASON_SHOWN.has(s.matched_by) && s.reason ? s.reason : null;
@@ -97,12 +102,25 @@ export function sharedReason(others: NameSuggestion[]): string | null {
 }
 
 /** T98: 나머지 후보 목록의 앞말. 이유가 모두 같으면 그 이유로('관련 있을 수 있는 법령', '남한 「…」에 대응하는 법령'). */
-export function othersLead(strong: NameSuggestion | null, others: NameSuggestion[]): string {
+export function othersLead(strong: NameSuggestion | null, others: NameSuggestion[], generic = "혹시 이 법령을 찾으셨나요? "): string {
   if (strong) return "다른 비슷한 이름: ";
   const shared = sharedReason(others);
   if (shared && others[0].matched_by === "semantic") return "이름이 같은 법령은 없습니다. 관련 있을 수 있는 법령: ";
   if (shared && others[0].matched_by === "kr_mapping") return `이름이 같은 북한 법령은 없습니다. ${shared.replace(/에 대응$/, "에 대응하는")} 법령: `;
-  return "혹시 이 법령을 찾으셨나요? ";
+  return generic;
+}
+
+/**
+ * T100: 검색어가 법령 이름 꼴인가 — 이름 끝이 '법'·'규약'·'규정'·'원칙'·'부칙(…)'·'(에·할데) 대하여' 등.
+ * 검색 화면은 이런 검색어에만 이름 해석(resolve)을 묻는다. '산업'·'토지' 같은 조문 내용 검색어는 묻지 않으므로
+ * 제안도 의미 검색(③) 호출도 없다(문턱값은 그대로 — 묻지 않을 뿐).
+ */
+const LAW_NAME_END = /(?:법|법률|법령|규약|규정|세칙|원칙|부칙(?:\s*\([^)]*\))?|대하여)$/;
+
+export function looksLikeLawName(q: string): boolean {
+  const s = (q || "").replace(/[「」『』“”"'‘’]/g, "").replace(/[\s?？.!]+$/, "").trim();
+  if (s.length < 2 || s.length > 60) return false;
+  return LAW_NAME_END.test(s);
 }
 
 /** 목적격 조사: 받침 있으면 '을', 없으면 '를'(한글이 아니면 '을(를)'). 「조선민주주의인민공화국 헌법」을 */

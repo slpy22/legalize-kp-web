@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { fetchCategories, searchLaws } from "@/lib/api";
+import { fetchCategories, fetchLawResolve, searchLaws } from "@/lib/api";
 import type { RefData, SearchResultItem } from "@/lib/types";
 import { SEARCH_EXAMPLES } from "@/lib/showcase";
 import { track } from "@/lib/track";
@@ -14,6 +14,8 @@ import Highlight from "@/components/Highlight";
 import ProvenanceBadges from "@/components/ProvenanceBadges";
 import LawYears from "@/components/LawYears";
 import { useLawIndex } from "@/components/LawNameInput";
+import LawSuggestBox, { type LawSuggestions } from "@/components/LawSuggestBox";
+import { looksLikeLawName, pickSuggestions } from "@/lib/versionMiss";
 
 /** 검색어가 없을 때(T42): 빈 화면 대신 예시 검색어와 분야별 목록(홈에서 옮겨 옴) */
 function Browse() {
@@ -78,6 +80,20 @@ function SearchResults() {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  // T100: 검색어가 법령 이름 꼴인데 이름이 정확히 같은 법령이 없으면 결과 위에 '찾으시는 법령이 혹시…'(404 와 같은 resolve 후보).
+  //       검색어가 바뀔 때만 묻는다(쪽 넘김은 다시 묻지 않음). 조문 내용 검색어('산업'·'토지')는 묻지 않는다.
+  //       후보에 검색어를 붙여 두고 지금 검색어의 것만 보인다(검색어가 바뀌면 이전 후보는 저절로 사라진다).
+  const [sugg, setSugg] = useState<{ q: string; s: LawSuggestions } | null>(null);
+  useEffect(() => {
+    if (!q || !looksLikeLawName(q)) return;
+    let alive = true;
+    fetchLawResolve(q)
+      .then((r) => alive && setSugg({ q, s: pickSuggestions(r, q.trim()) }))
+      .catch(() => alive && setSugg(null));
+    return () => {
+      alive = false;
+    };
+  }, [q]);
 
   useEffect(() => {
     if (!q) {
@@ -122,6 +138,7 @@ function SearchResults() {
 
       <div className="mt-8">
         {!q && <Browse />}
+        {q && sugg?.q === q && <LawSuggestBox sugg={sugg.s} kind="search" className="mb-6" />}
         {loading && (
           <p className="text-center text-gray-500">검색 중...</p>
         )}

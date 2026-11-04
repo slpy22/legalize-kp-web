@@ -277,6 +277,8 @@ export interface LawResolveData {
   matched_by: string | null;
   candidates: LawResolveCandidate[];
   hint: string | null;
+  /** T100: 옛이름·다른 이름·약칭으로 해석했을 때(matched_by=alias) 그 이유 — '옛이름 「사회주의헌법」' */
+  reason?: string | null;
   /** T98: 의미 검색 층 상태(used·cached·skipped:…) — 불렀을 때만 */
   semantic?: string;
 }
