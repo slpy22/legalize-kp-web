@@ -10,6 +10,7 @@ import type {
   OverviewData,
   CompareData,
   LawVersionsData,
+  LawResolveData,
   LawVersionDetail,
   DiffTextData,
   SemanticDiffData,
@@ -90,6 +91,13 @@ export async function fetchLaw(
 export async function fetchLawVersions(name: string): Promise<LawVersionsData> {
   return api<LawVersionsData>(
     `/api/v1/law?action=versions&name=${encodeURIComponent(name)}`,
+  );
+}
+
+/** 이름·별칭 → 정식 법령명, 못 찾으면 비슷한 이름 후보(T97: 없는 법령 주소 안내의 '혹시 …을 찾으셨나요?') */
+export async function fetchLawResolve(name: string): Promise<LawResolveData> {
+  return api<LawResolveData>(
+    `/api/v1/law?action=resolve&name=${encodeURIComponent(name)}`,
   );
 }
 

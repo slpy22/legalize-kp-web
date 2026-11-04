@@ -51,6 +51,39 @@ export function nearestVersion(requested: string, dates: string[]): { nearest: s
   return { nearest: nearest?.d ?? null, before };
 }
 
+/** T97: 이름 해석 응답 → 404 안내에 보일 후보(최대 3개). 확실한 1개는 strong, 나머지는 others. 후보 없으면 둘 다 비움. */
+export interface NameSuggestion {
+  name: string;
+  matched_by: string;
+}
+
+export function pickSuggestions(
+  data: { resolved?: string | null; matched_by?: string | null; candidates?: { name: string; matched_by: string; confident?: boolean }[] } | null | undefined,
+  asked: string,
+): { strong: NameSuggestion | null; others: NameSuggestion[] } {
+  if (!data || isApiError(data)) return { strong: null, others: [] };
+  const all: { name: string; matched_by: string; confident: boolean }[] = [];
+  if (data.resolved) all.push({ name: data.resolved, matched_by: data.matched_by || "resolved", confident: true });
+  for (const c of data.candidates || []) {
+    if (c && c.name && c.name !== asked && !all.some((a) => a.name === c.name)) {
+      all.push({ name: c.name, matched_by: c.matched_by, confident: !!c.confident });
+    }
+  }
+  const top = all.slice(0, 3);
+  const strongIdx = top.findIndex((c) => c.confident);
+  const strong = strongIdx >= 0 ? { name: top[strongIdx].name, matched_by: top[strongIdx].matched_by } : null;
+  const others = top.filter((_, i) => i !== strongIdx).map((c) => ({ name: c.name, matched_by: c.matched_by }));
+  return { strong, others };
+}
+
+/** 목적격 조사: 받침 있으면 '을', 없으면 '를'(한글이 아니면 '을(를)'). 「조선민주주의인민공화국 헌법」을 */
+export function objectParticle(word: string): string {
+  const last = (word || "").trim().slice(-1);
+  const code = last.charCodeAt(0) - 0xac00;
+  if (!(code >= 0 && code < 11172)) return "을(를)";
+  return code % 28 ? "을" : "를";
+}
+
 /** 주소의 법령 이름 조각 → 이름(깨진 인코딩이면 그대로). */
 export function decodeName(raw: string): string {
   try {

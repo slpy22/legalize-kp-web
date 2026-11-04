@@ -5,10 +5,10 @@ export default function NotFound() {
   return (
     <section className="mx-auto max-w-3xl px-4 py-12">
       <h1 className="mb-3 text-2xl font-bold text-navy">페이지를 찾을 수 없습니다</h1>
-      <p className="mb-6 text-sm text-gray-600">주소가 바뀌었거나 없는 페이지입니다. 검색이나 법령 색인에서 찾아 보세요.</p>
+      <p className="mb-6 text-sm text-gray-600">주소가 바뀌었거나 없는 페이지입니다. 법령 찾기에서 검색하거나 분야별 목록에서 찾아 보세요.</p>
       <div className="flex flex-wrap gap-3 text-sm">
-        <Link prefetch={false} href="/search" className="rounded-lg bg-navy px-4 py-2 font-semibold text-white hover:bg-navy-light">검색</Link>
-        <Link prefetch={false} href="/law-index" className="rounded-lg border border-navy-light px-4 py-2 font-medium text-navy-light hover:bg-navy-light hover:text-white">법령 색인</Link>
+        {/* T97: '법령 색인'(/law-index)은 자동완성용 JSON 이라 뺐다 — 법령 목록 화면은 /search */}
+        <Link prefetch={false} href="/search" className="rounded-lg bg-navy px-4 py-2 font-semibold text-white hover:bg-navy-light">법령 찾기</Link>
         <Link prefetch={false} href="/" className="rounded-lg border border-gray-300 px-4 py-2 font-medium text-gray-700 hover:bg-gray-100">홈</Link>
       </div>
     </section>

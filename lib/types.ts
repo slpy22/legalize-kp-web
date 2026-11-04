@@ -258,6 +258,23 @@ export interface LawVersionsData {
   total: number;
 }
 
+/** 이름 해석 응답 (action=resolve) — T97: 못 찾으면 candidates 에 비슷한 이름(확실한 1개만 confident) */
+export interface LawResolveCandidate {
+  id: number;
+  name: string;
+  matched_by: string;
+  confident?: boolean;
+}
+
+export interface LawResolveData {
+  input: string;
+  resolved: string | null;
+  law_id: number | null;
+  matched_by: string | null;
+  candidates: LawResolveCandidate[];
+  hint: string | null;
+}
+
 /** 특정 버전 본문 조회 응답 (action=get&version=...) */
 export interface LawVersionDetail {
   law: LawDetail["law"];
