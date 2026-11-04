@@ -148,6 +148,30 @@ export interface OpDevice { ok?: boolean; error?: string; on: boolean; auto: boo
 export const adminOpDevice = () => call<OpDevice>("/admin/usage/opdev");
 export const setAdminOpDevice = (on: boolean) => call<OpDevice>("/admin/usage/opdev", json({ on }));
 
+/** T101: 방문 분석(정기 점검·원자료 분석의 방문별 판정) — 관리자만. 질의 문자열은 components/admin/analysisQuery.ts 가 만든다 */
+export type AnalysisVerdict = "human" | "bot" | "hold";
+export interface AnalysisStep { t: string; kind: string; path?: string | null; law?: string | null; dwell?: number | null; note?: string | null }
+export interface AnalysisVisit {
+  id: number; day: string; label: string | null; start: string; end: string | null;
+  country: string | null; region: string | null; asn: number | null; org: string | null; org_kind: string;
+  device: string; src: string; src_host: string | null; pages: number; law_views: number;
+  dwell_sec: number | null; dwell_max: number | null; laws: string[]; topics: string[]; flow: AnalysisStep[];
+  verdict: AnalysisVerdict; bot_kind: string | null; rules: string[]; summary: string; source: string;
+}
+export interface AdminAnalysis {
+  ok?: boolean; error?: string; usage?: string; from: string; to: string; ready: boolean; total: number; visits: AnalysisVisit[];
+  facets: Partial<Record<"verdict" | "country" | "src" | "org_kind" | "law", { name: string; visits: number }[]>>;
+}
+export interface AnalysisAggRow { start: string; dim: string; key: string; verdict: string; visits: number; pages: number }
+export interface AdminAnalysisAggs {
+  ok?: boolean; error?: string; usage?: string; period: "day" | "week"; from: string; to: string; ready: boolean;
+  min_cell: number; rows: AnalysisAggRow[];
+}
+export const adminAnalysis = (qs: string) => call<AdminAnalysis>(`/admin/usage/analysis?${qs}`);
+export const adminAnalysisAggs = (qs: string) => call<AdminAnalysisAggs>(`/admin/usage/analysis/aggs?${qs}`);
+/** 집계 CSV 내려받기 주소(집계만 — 방문별 분석은 내려받지 않는다) */
+export const analysisCsvHref = (qs: string) => `${API}/api/v1/admin/usage/analysis/aggs.csv?${qs}`;
+
 /** 구글 로그인 시작 주소(next 는 사이트 안쪽 경로) */
 export function loginHref(next = "/"): string {
   return `${API}/api/v1/auth/google/login?next=${encodeURIComponent(next)}`;

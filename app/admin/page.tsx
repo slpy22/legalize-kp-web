@@ -8,6 +8,7 @@ import ClassifyStats from "@/components/admin/ClassifyStats";
 import DeviceStats from "@/components/admin/DeviceStats";
 import VisitorStats from "@/components/admin/VisitorStats";
 import VisitPaths from "@/components/admin/VisitPaths";
+import VisitAnalysis from "@/components/admin/VisitAnalysis";
 import { LawLink } from "@/components/admin/AdminLinks";
 import OpDevice from "@/components/admin/OpDevice";
 import SourceStats from "@/components/admin/SourceStats";
@@ -32,6 +33,13 @@ export default function AdminPage() {
   const [days, setDays] = useState(30);
   const [res, setRes] = useState<{ status: number; data: AdminUsage & { error?: string } } | null>(null);
   const [hover, setHover] = useState<number | null>(null);
+  // T101: '이용 추이' | '방문 분석' — 주소 #analysis 로 바로 열 수 있다(첫 화면은 로딩 중이라 서버·브라우저 첫 그림이 같다)
+  const [view, setView] = useState<"usage" | "analysis">(() =>
+    typeof window !== "undefined" && window.location.hash === "#analysis" ? "analysis" : "usage");
+  const go = (v: "usage" | "analysis") => {
+    setView(v);
+    window.history.replaceState(null, "", v === "analysis" ? "#analysis" : window.location.pathname);
+  };
 
   useEffect(() => {
     let alive = true;
@@ -80,6 +88,22 @@ export default function AdminPage() {
   const max = Math.max(1, ...daily.map((x) => x.n));
   return (
     <section className="mx-auto max-w-5xl px-4 py-8">
+      <div className="mb-4 inline-flex rounded-lg border border-gray-200 bg-white p-0.5 text-sm" role="tablist" aria-label="관리 화면">
+        {([["usage", "이용 추이"], ["analysis", "방문 분석"]] as const).map(([v, t]) => (
+          <button key={v} role="tab" aria-selected={view === v} onClick={() => go(v)}
+            className={`rounded-md px-3 py-1.5 ${view === v ? "bg-navy text-white" : "text-gray-600 hover:bg-gray-100"}`}>
+            {t}
+          </button>
+        ))}
+      </div>
+      {view === "analysis" ? (
+        <>
+          <h1 className="text-2xl font-bold text-gray-900">방문 분석</h1>
+          <p className="mt-1 text-xs text-gray-400">정기 점검에서 방문마다 사람·봇·보류를 가린 결과와 기간 집계입니다.</p>
+          <VisitAnalysis />
+        </>
+      ) : (
+      <>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-gray-900">이용 추이</h1>
         <div className="inline-flex rounded-lg border border-gray-200 bg-white p-0.5 text-sm" role="tablist" aria-label="기간">
@@ -219,6 +243,8 @@ export default function AdminPage() {
           </ol>
         </div>
       </div>
+      </>
+      )}
     </section>
   );
 }
