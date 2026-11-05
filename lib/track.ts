@@ -171,6 +171,66 @@ export function track(
   }
 }
 
+/** T116: 보이는 상태 누계가 이 초가 되면 머문 시간을 한 번 미리 보낸다(그 뒤는 지금처럼 숨기거나 떠날 때) */
+export const EARLY_DWELL_SEC = 15;
+
+export type DwellMeter = { show: () => void; hide: () => void; end: () => void };
+
+/**
+ * 한 페이지(seq)의 보이는 상태 시간 재기(T89) — 숨기면 멈추고 누계를 보낸다, 다시 보이면 이어 잰다, 페이지를 옮기면 마지막 누계를 보낸다.
+ * T116: 보이는 상태 누계가 EARLY_DWELL_SEC 가 되면 한 번 미리 보낸다. 탭을 70분 넘게 보이는 채로 두면 숨김·떠남 신호가 늦어
+ * 해외 회선의 출처 없는 한 페이지 방문(규칙 3j — 머문 시간 신호가 하나도 없으면 수집으로 정산)이 사람인데도 빠질 수 있었다.
+ * 보내는 값은 원래 보내던 누계와 같은 것이고 서버는 큰 값만 남긴다 — 새로 모으는 정보는 없다.
+ */
+export function dwellMeter(seq: number, visible: boolean, clock: () => number = () => performance.now()): DwellMeter {
+  let acc = 0;
+  let since: number | null = visible ? clock() : null;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  let early = false;
+  const total = () => acc + (since !== null ? clock() - since : 0);
+  const flush = () => trackDwell(seq, Math.round(total() / 1000));
+  const disarm = () => {
+    if (timer !== null) {
+      clearTimeout(timer);
+      timer = null;
+    }
+  };
+  const arm = () => {
+    if (early || timer !== null || since === null) return;
+    timer = setTimeout(() => {
+      timer = null;
+      if (early || since === null) return;
+      if (total() >= EARLY_DWELL_SEC * 1000 - 50) {
+        early = true;
+        flush();
+      } else {
+        arm();                                     // 타이머가 일찍 깼다(시계 차이) — 남은 만큼 다시
+      }
+    }, Math.max(0, EARLY_DWELL_SEC * 1000 - total()));
+  };
+  arm();
+  return {
+    show() {
+      if (since === null) {
+        since = clock();
+        arm();
+      }
+    },
+    hide() {
+      disarm();
+      if (since !== null) {
+        acc += clock() - since;
+        since = null;
+      }
+      flush();
+    },
+    end() {
+      disarm();
+      flush();
+    },
+  };
+}
+
 /** T89: 이 탭의 seq 번째 페이지에 보이는 상태로 머문 시간(초, 누계). 서버는 큰 값만 남긴다. */
 export function trackDwell(seq: number, sec: number): void {
   if (typeof window === "undefined" || sec <= 0) return;

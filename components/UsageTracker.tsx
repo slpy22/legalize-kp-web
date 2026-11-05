@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { entrySource, isLanding, nextSeq, track, trackDwell, type TrackKind } from "@/lib/track";
+import { dwellMeter, entrySource, isLanding, nextSeq, track, type TrackKind } from "@/lib/track";
 
 /** T107: 앞 페이지가 열린 뒤 이 시간 안에, 사람 조작(누름·키·터치·뒤로/앞으로) 없이 주소가 바뀌면 화면 자체 이동으로 본다 */
 export const SELF_MOVE_MS = 5000;
@@ -14,6 +14,7 @@ export const SELF_MOVE_MS = 5000;
  * T91: 이 탭의 첫 페이지(순번 1)에만 출처(직전 사이트 호스트 이름·utm_source)를 붙인다 — 다음 페이지부터는 보내지 않는다.
  * T107: 출처는 '이 문서를 새로 연 첫 페이지 기록'에 붙인다(같은 탭에서 AI 답 링크 등으로 다시 들어와 순번이 2 이상이어도).
  * 화면이 사람 조작 없이 SELF_MOVE_MS 안에 주소를 바꾼 페이지에는 nav:"auto" 를 붙인다.
+ * T116: 보이는 상태 누계가 15초가 되면 머문 시간을 한 번 미리 보낸다(lib/track.ts dwellMeter — 보내는 값은 같은 누계).
  */
 export default function UsageTracker() {
   const pathname = usePathname();
@@ -42,33 +43,19 @@ export default function UsageTracker() {
     const extra = seq && (seq === 1 || landing) ? entrySource() : seq && self ? { nav: "auto" as const } : {};
     track("page", { path: pathname, ...(seq ? { seq } : {}), ...extra });
     if (!seq) return;
-    let acc = 0;
-    let since: number | null = document.visibilityState === "visible" ? performance.now() : null;
-    const pause = () => {
-      if (since !== null) {
-        acc += performance.now() - since;
-        since = null;
-      }
-    };
-    const flush = () => trackDwell(seq, Math.round((acc + (since !== null ? performance.now() - since : 0)) / 1000));
+    // T116: 보이는 상태 누계 15초면 한 번 미리 보낸다(dwellMeter) — 그 뒤는 숨기거나 떠날 때
+    const meter = dwellMeter(seq, document.visibilityState === "visible");
     const onVisibility = () => {
-      if (document.visibilityState === "hidden") {
-        pause();
-        flush();
-      } else if (since === null) {
-        since = performance.now();
-      }
+      if (document.visibilityState === "hidden") meter.hide();
+      else meter.show();
     };
-    const onPageHide = () => {
-      pause();
-      flush();
-    };
+    const onPageHide = () => meter.hide();
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("pagehide", onPageHide);
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("pagehide", onPageHide);
-      flush();
+      meter.end();
     };
   }, [pathname]);
   return null;
