@@ -15,6 +15,7 @@ import ProvenanceBadges from "@/components/ProvenanceBadges";
 import LawYears from "@/components/LawYears";
 import { useLawIndex } from "@/components/LawNameInput";
 import LawSuggestBox, { type LawSuggestions } from "@/components/LawSuggestBox";
+import CategoryGrid from "@/components/CategoryGrid";
 import { looksLikeLawName, pickSuggestions } from "@/lib/versionMiss";
 
 /** 검색어가 없을 때(T42): 빈 화면 대신 예시 검색어와 분야별 목록(홈에서 옮겨 옴) */
@@ -24,7 +25,6 @@ function Browse() {
   useEffect(() => {
     fetchCategories().then(setRef).catch(() => setFailed(true));
   }, []);
-  const categories = ref ? [...ref.categories].sort((a, b) => b.count - a.count) : [];
   return (
     <div className="space-y-8">
       <div>
@@ -42,25 +42,7 @@ function Browse() {
           ))}
         </div>
       </div>
-      <div>
-        <h2 className="mb-3 text-lg font-bold text-gray-800">
-          분야별 법령{ref ? <span className="ml-2 text-sm font-normal text-gray-500">총 {ref.total_laws}건</span> : null}
-        </h2>
-        {failed && <p className="text-sm text-gray-500">분야 목록을 불러올 수 없습니다.</p>}
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {categories.map((cat) => (
-            <Link
-              prefetch={false}
-              key={cat.category}
-              href={`/category/${encodeURIComponent(cat.category)}`}
-              className="group flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm transition-shadow hover:shadow-md"
-            >
-              <span className="font-medium text-navy group-hover:underline">{cat.category}</span>
-              <span className="text-sm text-gray-500">{cat.count}건</span>
-            </Link>
-          ))}
-        </div>
-      </div>
+      <CategoryGrid data={ref} failed={failed} />
     </div>
   );
 }
