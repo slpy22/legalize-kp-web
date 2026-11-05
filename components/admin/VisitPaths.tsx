@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useState } from "react";
-import { adminVisit, adminVisits, type AdminVisitEvent, type AdminVisits } from "@/lib/account";
+import { adminVisit, adminVisits, PENDING_RULE_LABEL, type AdminVisitEvent, type AdminVisits } from "@/lib/account";
 import { LawLink, PathLink } from "./AdminLinks";
 import { decPath } from "./decPath";
 
@@ -16,7 +16,7 @@ import { decPath } from "./decPath";
  * T99: 열람 순서의 경로·법령명은 그 화면으로 가는 링크(새 탭 — AdminLinks). 검색어·query 와 화면이 아닌 경로는 글자만.
  * T113: 정산 대기(봇 의심) 방문은 시작 칸에 표지와 정산 예정 시각(KST)을 붙인다 — 확정되면 목록에서 사라진다.
  */
-const PENDING: Record<string, string> = { "3f": "데이터센터 단발", "3i": "회전 프록시", "3g": "자동 열람" };
+const PENDING: Record<string, string> = PENDING_RULE_LABEL;   // T117: 3j(해외 회선 수집 무리)까지 — lib/account.ts 한 곳
 const DEVICE: Record<string, string> = { mobile: "모바일", tablet: "태블릿", pc: "PC", unknown: "알 수 없음", none: "기록 전" };
 export const SRC: Record<string, string> = {
   ai: "AI 답변", search: "검색", social: "SNS·커뮤니티", other: "다른 사이트", direct: "유입 정보 없음(주소 입력·즐겨찾기·앱·메신저)", none: "기록 없음",

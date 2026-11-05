@@ -89,18 +89,46 @@ export interface AdminVisitors {
   pending?: AdminPending;   // T113: 정산 대기(봇 의심) — 위 방문자 수에서 뺀 것
 }
 
-/** T113: 정산 대기 — 3f(데이터센터 단발)·3i(회전 프록시)·3g(자동 열람). 수만(쿠키 ID 없음) */
+/** T113: 정산 대기 — 3f(데이터센터 단발)·3i(회전 프록시)·3j(해외 회선 수집 무리, T116)·3g(자동 열람). 수만(쿠키 ID 없음).
+ * 3j 칸은 backend t116 부터 온다 — 그 전 backend 에는 없으므로 선택 값으로 받는다. */
 export interface AdminPending {
   visitors_today: number;                                   // 오늘 방문자 수에서 뺀 줄
   days: { day: string; visitors: number }[];
-  visitors_by_rule: { "3f": number; "3i": number; "3g": number };
-  visits: { "3f": number; "3i": number; "3g_bursts": number; "3g_events": number };
+  visitors_by_rule: { "3f": number; "3i": number; "3j"?: number; "3g": number };
+  visits: { "3f": number; "3i": number; "3j"?: number; "3g_bursts": number; "3g_events": number };
   unmatched_visits: number;                                 // 재시작 복원 방문(쿠키를 몰라 방문자 수는 조정하지 않음)
   next_settle_kst: string | null;                           // 가장 이른 정산 예정(KST 'YYYY-MM-DD HH:MM')
-  settle_after_min: number;                                 // 3f·3i: 마지막 기록 뒤 이만큼
+  settle_after_min: number;                                 // 3f·3i·3j: 마지막 기록 뒤 이만큼
   auto_quiet_min: number;                                   // 3g: 묶음이 끝난 뒤 이만큼
 }
-export type PendingRule = "3f" | "3i" | "3g";
+export type PendingRule = "3f" | "3i" | "3j" | "3g";
+
+/** T117: 정산 대기 규칙의 화면 이름(관리 화면 방문자 수·방문 목록이 같이 쓴다) */
+export const PENDING_RULE_LABEL: Record<PendingRule, string> = {
+  "3f": "데이터센터 단발", "3i": "회전 프록시", "3j": "해외 회선 수집 무리", "3g": "자동 열람",
+};
+export const PENDING_RULES: readonly PendingRule[] = ["3f", "3i", "3j", "3g"];
+
+/** T117: 규칙별 대기 방문 수(3g 는 묶음 수) — 3j 칸이 없는 옛 backend 응답은 0 */
+export function pendingVisitsByRule(p: AdminPending): [PendingRule, number][] {
+  return PENDING_RULES.map((r) => [r, r === "3g" ? p.visits["3g_bursts"] : p.visits[r] ?? 0]);
+}
+
+/** T117: 방문 정산 대기(dc_pending 은 3f·3i·3j 를 모두 센다) — 규칙별로 풀어 쓴다(split·swarm 값이 없는 옛 backend 는 합만) */
+export function settlePendingNote(s: { dc_pending: number; split_pending?: number; swarm_pending?: number }): string {
+  const i = s.split_pending ?? 0;
+  const j = s.swarm_pending ?? 0;
+  const f = Math.max(0, s.dc_pending - i - j);
+  if (s.split_pending === undefined && s.swarm_pending === undefined) return `방문 정산 대기 ${s.dc_pending}`;
+  const parts = [[PENDING_RULE_LABEL["3f"], f], [PENDING_RULE_LABEL["3i"], i], [PENDING_RULE_LABEL["3j"], j]].filter(([, n]) => (n as number) > 0)
+    .map(([l, n]) => `${l} ${n}`);
+  return `방문 정산 대기 ${s.dc_pending}${parts.length ? `(${parts.join(" · ")})` : ""}`;
+}
+
+/** T117: 대기 방문 합(3f + 3i + 3j + 3g 묶음) */
+export function pendingVisitsTotal(p: AdminPending): number {
+  return pendingVisitsByRule(p).reduce((a, [, n]) => a + n, 0);
+}
 
 /** T91: 열람 페이지(kind=page)·법령 조회(law_view) 건수 */
 export interface ViewCounts { pages: number; law_views: number }

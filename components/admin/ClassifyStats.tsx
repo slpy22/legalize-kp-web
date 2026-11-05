@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { AdminUsage, AdminVisitors } from "@/lib/account";
+import { settlePendingNote, type AdminUsage, type AdminVisitors } from "@/lib/account";
 
 /**
  * T85: 방문 분류 사유별 건수 — 관리자 이용현황. 방문자 수·이용 기록에서 뺀 요청(검색엔진·렌더러·사칭·수집 도구·내부)과
@@ -43,7 +43,7 @@ const REASON: Record<string, string> = {
   scan_bundle: "같은 대역 스캔 묶음(원자료 확인 뒤 정리)",
   // T112·T113
   proxy_split: "회전 프록시 — 한 화면을 여러 주소가 나눠 받음(방문이 끝난 뒤 정산)",
-  crawl_swarm: "통신사 회선 수집 무리(원자료 확인 뒤 정리)",
+  crawl_swarm: "해외 회선 수집 무리 — 출처 없는 한 페이지 · 머문 시간 신호 없음(방문이 끝난 뒤 정산 · 규칙 전 기록은 원자료 확인 뒤 정리)",
   lan: "내부망(LAN — 공유기 경유)",
   admin: "관리자 계정 로그인",
   device: "운영자 기기(이 브라우저 집계 제외)",
@@ -70,7 +70,7 @@ function groupOf(r: { kind: string; name: string }): [Group, string] {
   if (/\((사칭|확인 실패)\)$/.test(r.name)) return ["impostor", r.name];
   if (r.kind === "suspect" && (r.name === "forged_ua_dc" || r.name === "dc_bounce")) return ["datacenter", REASON[r.name]];
   if (r.kind === "suspect" && (r.name === "auto_browse" || r.name === "scan_bundle")) return ["automation", REASON[r.name]];
-  // T113: 회전 프록시(규칙 3i)·통신사 회선 수집 무리(손으로 정리)도 같은 묶음
+  // T113: 회전 프록시(규칙 3i)·해외 회선 수집 무리(T116 규칙 3j — 그 전에는 손으로 정리)도 같은 묶음
   if (r.kind === "suspect" && (r.name === "proxy_split" || r.name === "crawl_swarm")) return ["automation", REASON[r.name]];
   return ["tool", REASON[r.name] ?? r.name];
 }
@@ -186,7 +186,7 @@ export default function ClassifyStats({ v, days, status }: {
           {status.timeouts ? ` · 2초 넘김 ${status.timeouts}` : ""}) · 캐시 적중 {status.cache_hits.toLocaleString()}
           {" "}— DNS 가 답하지 않으면 사람 브라우저는 사람으로 셉니다.
           {typeof (status as { dc_pending?: number }).dc_pending === "number" &&
-            ` · 데이터센터 방문 정산 대기 ${(status as { dc_pending?: number }).dc_pending}`}
+            ` · ${settlePendingNote(status as unknown as { dc_pending: number; split_pending?: number; swarm_pending?: number })}`}
           {typeof (status as { auto_pending?: number }).auto_pending === "number" &&
             ` · 자동 열람 정산 대기 ${(status as { auto_pending?: number }).auto_pending}`}
           {(status as { tentative?: number }).tentative
