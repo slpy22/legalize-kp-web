@@ -80,16 +80,19 @@ test("UsageTracker: 출처는 seq 1 또는 문서 첫 기록에, 자체 이동�
 
 test("새 방문: 문서를 새로 열 때 탭이 30분 넘게 쉬었으면 방문 ID·순번을 새로 시작한다(B 재현)", async () => {
   store.clear();
-  const day1 = await fresh();                 // 11-04 13:19 — 첫 문서
-  assert.equal(day1.nextSeq(), 1);
-  const v1 = day1.tabVisit();
   const realNow = Date.now;
+  const t0 = Date.UTC(2026, 10, 4, 4, 19);    // T114: 시계 고정(KST 자정을 넘기면 날짜 규칙이 끼어든다)
   try {
-    Date.now = () => realNow() + (11 * 60 + 43) * 60 * 1000;     // 11시간 43분 뒤 같은 탭에서 문서를 다시 연다
+    Date.now = () => t0;
+    const day1 = await fresh();                 // 11-04 13:19 — 첫 문서
+    assert.equal(day1.nextSeq(), 1);
+    const v1 = day1.tabVisit();
+    Date.now = () => t0 + (11 * 60 + 43) * 60 * 1000;     // 11시간 43분 뒤(11-05 01:02) 같은 탭에서 문서를 다시 연다
     const day2 = await fresh();
     assert.equal(day2.nextSeq(), 1);           // 예전에는 2
     assert.notEqual(day2.tabVisit(), v1);
-    Date.now = () => realNow() + (11 * 60 + 43) * 60 * 1000 + 3 * 3600 * 1000;   // 같은 문서 안 이동은 오래 쉬어도 그대로
+    // T114: 같은 문서 안 이동은 2시간 쉬어도 그대로(3시간 넘게 쉬거나 날짜가 바뀌면 새 방문 — tests/t114Web.test.mjs)
+    Date.now = () => t0 + (11 * 60 + 43) * 60 * 1000 + 2 * 3600 * 1000;
     assert.equal(day2.nextSeq(), 2);
   } finally {
     Date.now = realNow;
@@ -98,12 +101,14 @@ test("새 방문: 문서를 새로 열 때 탭이 30분 넘게 쉬었으면 방�
 
 test("새 방문 아님: 30분 안에 문서를 다시 열면 같은 방문 ID 로 순번이 이어진다", async () => {
   store.clear();
+  const realNow = Date.now;
+  const t0 = Date.UTC(2026, 10, 5, 1, 0);     // T114: 시계 고정(10:00 KST — 자정을 넘기지 않게)
+  Date.now = () => t0;
   const a = await fresh();
   assert.equal(a.nextSeq(), 1);
   const v1 = a.tabVisit();
-  const realNow = Date.now;
   try {
-    Date.now = () => realNow() + 29 * 60 * 1000;
+    Date.now = () => t0 + 29 * 60 * 1000;
     const b = await fresh();
     assert.equal(b.nextSeq(), 2);
     assert.equal(b.tabVisit(), v1);

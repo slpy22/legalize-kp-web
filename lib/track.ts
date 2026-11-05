@@ -15,6 +15,11 @@
  * T107: 임시 방문 ID 는 탭을 VISIT_IDLE_MS(30분) 넘게 쓰지 않다가 문서를 새로 열면 새로 만든다 — 열어 둔(또는 복원한) 탭을
  * 다음 날 다시 쓰면 앞 방문의 순번이 이어져 새 방문의 첫 페이지·출처가 빠졌다(2026-11-05 01:02, 11-04 13:19 방문의 같은 탭).
  * 사이트 안 이동(같은 문서)에서는 바꾸지 않는다 — 한 페이지를 오래 읽고 옮겨 가도 같은 방문이다.
+ * T114: 사이트 안 이동이라도 마지막 기록(페이지·머문 시간) 뒤 KST 날짜가 바뀌었거나 SITE_IDLE_MS(3시간) 넘게 쉬었으면 새 임시 방문 ID 로
+ * 시작한다 — 11-04 18:02 방문의 탭을 열어 둔 채 11-05 12:57 사이트 안 링크를 눌러 순번 10 으로 이어져, 그날 방문 목록에 안 보였다.
+ * 이때 첫 페이지에는 출처를 붙이지 않는다(문서를 연 때의 직전 사이트는 그날의 유입이 아니다). 한 페이지를 읽는 동안에는 탭을
+ * 숨기거나 옮길 때 머문 시간 기록이 마지막 기록 시각을 새로 하므로, 긴 읽기(머문 시간 상한 1시간) 뒤 이동은 같은 방문이다.
+ * 문서를 새로 열 때(30분)도 날짜가 바뀌었으면 새로 시작한다.
  * 'kind' 는 백엔드 app/usage/repo.py KINDS 와 같다.
  */
 export type TrackKind = "page" | "law_view" | "search" | "diff" | "compare" | "terms" | "chat";
@@ -24,10 +29,17 @@ const TAB_KEY = "nklaw_tab";        // 임시 방문 ID
 const SEQ_KEY = "nklaw_tab_seq";    // 이 탭 안의 페이지 순번
 const AT_KEY = "nklaw_tab_at";      // 이 탭의 마지막 기록 시각(ms) — 방문을 새로 열지 가르는 데만
 export const VISIT_IDLE_MS = 30 * 60 * 1000;
+export const SITE_IDLE_MS = 3 * 60 * 60 * 1000;   // T114: 사이트 안 이동에서 새 방문으로 보는 쉼
 export const DWELL_MAX = 3600;      // 한 페이지 머문 시간 상한(초) — 서버와 같다
 
 let landingTaken = false;
 let docStarted = false;
+let quietVisit: string | null = null;   // T114: 사이트 안에서 새로 시작한 임시 방문 — 그 첫 페이지에 출처를 붙이지 않는다
+
+/** KST 날짜(YYYY-MM-DD) — 방문을 새로 열지 가르는 데만 */
+function kstDay(ms: number): string {
+  return new Date(ms + 9 * 3600 * 1000).toISOString().slice(0, 10);
+}
 
 function touch(now: number): void {
   try {
@@ -75,19 +87,22 @@ export function tabVisit(): string | null {
 }
 
 /** 이 탭의 다음 페이지 순번(1부터). 임시 방문 ID 가 없으면 null.
- * T107: 문서의 첫 순번을 받을 때 탭이 VISIT_IDLE_MS 넘게 쉬었으면 임시 방문 ID·순번을 새로 시작한다. */
+ * T107: 문서의 첫 순번을 받을 때 탭이 VISIT_IDLE_MS 넘게 쉬었으면 임시 방문 ID·순번을 새로 시작한다.
+ * T114: 사이트 안 이동이라도 KST 날짜가 바뀌었거나 SITE_IDLE_MS 넘게 쉬었으면 새로 시작한다(출처 없이). */
 export function nextSeq(): number | null {
   if (!tabVisit()) return null;
   try {
     const now = Date.now();
-    if (!docStarted) {
-      docStarted = true;
-      const at = parseInt(sessionStorage.getItem(AT_KEY) ?? "0", 10) || 0;
-      if (at && now - at > VISIT_IDLE_MS) {
-        sessionStorage.removeItem(TAB_KEY);
-        sessionStorage.removeItem(SEQ_KEY);
-        if (!tabVisit()) return null;
-      }
+    const at = parseInt(sessionStorage.getItem(AT_KEY) ?? "0", 10) || 0;
+    const newDay = at > 0 && kstDay(at) !== kstDay(now);
+    const first = !docStarted;
+    docStarted = true;
+    if (at && (newDay || now - at > (first ? VISIT_IDLE_MS : SITE_IDLE_MS))) {
+      sessionStorage.removeItem(TAB_KEY);
+      sessionStorage.removeItem(SEQ_KEY);
+      const v = tabVisit();
+      if (!v) return null;
+      quietVisit = first ? null : v;
     }
     touch(now);
     const n = (parseInt(sessionStorage.getItem(SEQ_KEY) ?? "0", 10) || 0) + 1;
@@ -138,7 +153,9 @@ export function track(
     const visit = tabVisit();
     const { seq, ref, utm, nav, ...rest } = data;
     // T91·T107: 출처는 순번이 있는 페이지 기록에만(부르는 쪽이 문서를 새로 연 첫 기록에만 넘긴다)
-    const src = visit && seq && kind === "page" && ref !== undefined ? { ref, ...(utm ? { utm } : {}) } : {};
+    // T114: 사이트 안에서 새로 시작한 방문의 첫 페이지에는 붙이지 않는다
+    const quiet = visit !== null && visit === quietVisit && seq === 1;
+    const src = visit && seq && kind === "page" && ref !== undefined && !quiet ? { ref, ...(utm ? { utm } : {}) } : {};
     // T107: 화면 자체 이동 표지 — 두 번째 이후 페이지에만, 출처와 함께 쓰지 않는다
     const auto = visit && seq && seq >= 2 && kind === "page" && nav === "auto" && ref === undefined ? { nav } : {};
     const body = JSON.stringify({ kind, ...rest, ...(visit ? { visit, ...(seq ? { seq } : {}), ...src, ...auto } : {}) });
