@@ -1,13 +1,39 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { AdminVisitors } from "@/lib/account";
+import type { AdminPending, AdminVisitors } from "@/lib/account";
 
 /**
  * 관리자 방문자 수·접속 국가·봇(T52). 집계만 보인다.
  * 색: dataviz 기준 범주 1~3(검증 통과 — 청록은 바탕 대비가 3:1 아래라 범례·표로 보기를 함께 둔다).
  * 주·월: 쿠키 방문자는 기간 안 중복 없는 정확한 수, '쿠키 없이 집계'는 일별 합(근사)이라 화면에 그렇게 적는다.
+ * T113: 정산 대기(봇 의심 — 마지막 기록 70분 뒤 확정) 방문자는 위 수에서 빼고 따로 보인다. 사람 신호가 보이면 서버가 다시 센다.
  */
+const RULE: Record<string, string> = { "3f": "데이터센터 단발", "3i": "회전 프록시", "3g": "자동 열람" };
+
+function hmOf(kst: string | null | undefined): string {
+  return kst ? kst.slice(11, 16) : "";
+}
+
+/** T113: 정산 대기 한 줄 — 방문자 수 옆 */
+export function PendingNote({ p }: { p?: AdminPending }) {
+  if (!p) return null;
+  const visits = p.visits["3f"] + p.visits["3i"] + p.visits["3g_bursts"];
+  if (!visits && !p.visitors_today) return null;
+  const parts = (["3f", "3i", "3g"] as const)
+    .map((r) => [r, r === "3g" ? p.visits["3g_bursts"] : p.visits[r]] as const)
+    .filter(([, n]) => n > 0)
+    .map(([r, n]) => `${RULE[r]} ${n}`);
+  return (
+    <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900" role="status">
+      <strong>정산 대기 {p.visitors_today.toLocaleString()}명</strong> — 봇 의심, 마지막 기록 {p.settle_after_min}분 뒤 확정
+      {" "}(위 방문자 수에서 뺌 · 대기 방문 {visits.toLocaleString()}{parts.length ? `: ${parts.join(" · ")}` : ""}
+      {p.next_settle_kst ? ` · 가장 이른 확정 ${hmOf(p.next_settle_kst)}` : ""}).
+      {" "}머문 시간 30초 이상·다른 페이지·바깥 유입 같은 사람 신호가 보이면 바로 방문자로 다시 셉니다.
+      {p.unmatched_visits > 0 && ` 재시작 전부터 기다리던 방문 ${p.unmatched_visits}건은 방문자 쿠키를 몰라 방문자 수에 그대로 있습니다(확정 때 빠질 수 있음).`}
+    </p>
+  );
+}
 const SERIES = [
   { key: "member", label: "회원", color: "#2a78d6" },
   { key: "guest", label: "비회원(방문자 쿠키)", color: "#eb6834" },
@@ -87,6 +113,7 @@ export default function VisitorStats({ v, days, geoip }: {
           </div>
         ))}
       </dl>
+      <PendingNote p={v.pending} />
 
       <div className="mt-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
         <ul className="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600" aria-label="범례">

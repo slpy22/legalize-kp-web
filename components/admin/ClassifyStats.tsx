@@ -41,6 +41,9 @@ const REASON: Record<string, string> = {
   // T105
   auto_browse: "자동 열람(쿠키 없이 짧은 간격 연속 — 같은 페이지 다시 받기 · 머문 시간 신호 없음, 묶음이 끝난 뒤 정산)",
   scan_bundle: "같은 대역 스캔 묶음(원자료 확인 뒤 정리)",
+  // T112·T113
+  proxy_split: "회전 프록시 — 한 화면을 여러 주소가 나눠 받음(방문이 끝난 뒤 정산)",
+  crawl_swarm: "통신사 회선 수집 무리(원자료 확인 뒤 정리)",
   lan: "내부망(LAN — 공유기 경유)",
   admin: "관리자 계정 로그인",
   device: "운영자 기기(이 브라우저 집계 제외)",
@@ -67,6 +70,8 @@ function groupOf(r: { kind: string; name: string }): [Group, string] {
   if (/\((사칭|확인 실패)\)$/.test(r.name)) return ["impostor", r.name];
   if (r.kind === "suspect" && (r.name === "forged_ua_dc" || r.name === "dc_bounce")) return ["datacenter", REASON[r.name]];
   if (r.kind === "suspect" && (r.name === "auto_browse" || r.name === "scan_bundle")) return ["automation", REASON[r.name]];
+  // T113: 회전 프록시(규칙 3i)·통신사 회선 수집 무리(손으로 정리)도 같은 묶음
+  if (r.kind === "suspect" && (r.name === "proxy_split" || r.name === "crawl_swarm")) return ["automation", REASON[r.name]];
   return ["tool", REASON[r.name] ?? r.name];
 }
 

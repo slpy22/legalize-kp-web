@@ -86,7 +86,21 @@ export interface AdminVisitors {
   orgs?: ({ org: string; kind: string; country: string | null; visitors: number } & ViewCounts)[];
   devices?: ({ device: "mobile" | "tablet" | "pc" | "unknown" | "none"; visitors: number } & ViewCounts)[];   // T88 — none = 기록 전
   sources?: AdminSources;   // T91: 유입 경로
+  pending?: AdminPending;   // T113: 정산 대기(봇 의심) — 위 방문자 수에서 뺀 것
 }
+
+/** T113: 정산 대기 — 3f(데이터센터 단발)·3i(회전 프록시)·3g(자동 열람). 수만(쿠키 ID 없음) */
+export interface AdminPending {
+  visitors_today: number;                                   // 오늘 방문자 수에서 뺀 줄
+  days: { day: string; visitors: number }[];
+  visitors_by_rule: { "3f": number; "3i": number; "3g": number };
+  visits: { "3f": number; "3i": number; "3g_bursts": number; "3g_events": number };
+  unmatched_visits: number;                                 // 재시작 복원 방문(쿠키를 몰라 방문자 수는 조정하지 않음)
+  next_settle_kst: string | null;                           // 가장 이른 정산 예정(KST 'YYYY-MM-DD HH:MM')
+  settle_after_min: number;                                 // 3f·3i: 마지막 기록 뒤 이만큼
+  auto_quiet_min: number;                                   // 3g: 묶음이 끝난 뒤 이만큼
+}
+export type PendingRule = "3f" | "3i" | "3g";
 
 /** T91: 열람 페이지(kind=page)·법령 조회(law_view) 건수 */
 export interface ViewCounts { pages: number; law_views: number }
@@ -129,6 +143,7 @@ export interface AdminVisitRow {
   visit: string; start: string; last: string; span_sec: number; pages: number; law_views?: number; events: number; dwell_sec: number;
   region: string; org: string; org_kind: string; device: string;
   src?: SourceKind | "none"; src_host?: string | null;   // T91: 유입 경로(none = 기록 없음)
+  pending?: { rule: PendingRule; settle_at: string };     // T113: 정산 대기 표지(정산 예정 KST 분)
 }
 export interface AdminVisits {
   ok?: boolean; error?: string; day: string; ready: boolean; total: number; visits: AdminVisitRow[];

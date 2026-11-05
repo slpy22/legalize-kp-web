@@ -14,7 +14,9 @@ import { decPath } from "./decPath";
  * T96: 머문 시간 '측정 안 됨'(신호가 오지 않음 — 보이는 상태가 0.5초 미만이었거나 뒤 탭·아직 열림·렌더러)과
  *      측정된 값을 가른다(값 0 은 '1초 미만' — 지금 화면은 0 을 보내지 않지만 API 는 받는다). 방문 합계는 측정된 페이지만 더하고, 일부만 측정됐으면 그 수를 붙인다.
  * T99: 열람 순서의 경로·법령명은 그 화면으로 가는 링크(새 탭 — AdminLinks). 검색어·query 와 화면이 아닌 경로는 글자만.
+ * T113: 정산 대기(봇 의심) 방문은 시작 칸에 표지와 정산 예정 시각(KST)을 붙인다 — 확정되면 목록에서 사라진다.
  */
+const PENDING: Record<string, string> = { "3f": "데이터센터 단발", "3i": "회전 프록시", "3g": "자동 열람" };
 const DEVICE: Record<string, string> = { mobile: "모바일", tablet: "태블릿", pc: "PC", unknown: "알 수 없음", none: "기록 전" };
 export const SRC: Record<string, string> = {
   ai: "AI 답변", search: "검색", social: "SNS·커뮤니티", other: "다른 사이트", direct: "유입 정보 없음(주소 입력·즐겨찾기·앱·메신저)", none: "기록 없음",
@@ -187,6 +189,12 @@ export default function VisitPaths() {
                       <td className="px-3 py-2 tabular-nums">
                         <span className="mr-1 text-gray-400">{open === v.visit ? "▾" : "▸"}</span>
                         {hm(v.start)}
+                        {v.pending && (
+                          <span className="ml-1.5 whitespace-nowrap rounded bg-amber-50 px-1.5 py-0.5 text-[11px] text-amber-900 ring-1 ring-amber-200"
+                            title={`정산 대기(${PENDING[v.pending.rule] ?? v.pending.rule}) — 봇 의심, 사람 신호가 없으면 ${v.pending.settle_at} 무렵 확정돼 기록이 빠집니다`}>
+                            정산 대기 · {v.pending.settle_at.slice(11, 16)}
+                          </span>
+                        )}
                       </td>
                       <td className="px-3 py-2 text-right tabular-nums">{v.pages}</td>
                       <td className="px-3 py-2 text-right tabular-nums">{v.law_views ?? "—"}</td>
